@@ -1,0 +1,751 @@
+{% set current_lang_code = current_locale[:2] if current_locale else 'de' %} {%
+set current_lang = (language_options | selectattr('code', 'equalto',
+current_lang_code) | list | first) %}
+<!doctype html>
+<html lang="{{ current_lang_code }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Requirements Tool{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      main {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Modern Light Header -->
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top"
+      style="height: 64px"
+    >
+      <div class="container-fluid px-3">
+        <!-- Logo + App Name (Left) -->
+        <a
+          class="navbar-brand d-flex align-items-center text-decoration-none me-4"
+          href="{{ url_for('main.home') if current_user.is_authenticated else url_for('auth.login') }}"
+        >
+          <div
+            class="d-flex align-items-center justify-content-center rounded bg-primary text-white me-2"
+            style="width: 36px; height: 36px"
+          >
+            <i class="bi bi-clipboard-check fs-5"></i>
+          </div>
+          <span class="fw-bold text-dark">Requirements Tool</span>
+        </a>
+
+        <!-- Right Side: Notifications + User Avatar/Dropdown -->
+        <div class="d-flex align-items-center gap-3 ms-auto">
+          {% if current_user.is_authenticated %}
+
+          <!-- Notification Bell -->
+          <div class="dropdown me-2">
+            <button
+              class="btn btn-link text-decoration-none p-2 border-0 rounded position-relative"
+              type="button"
+              id="notificationDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              style="
+                background: none;
+                color: #495057;
+                transition: all 0.2s ease;
+              "
+              onmouseover="
+                this.style.backgroundColor = '#f8f9fa';
+                this.style.color = '#0d6efd';
+              "
+              onmouseout="
+                this.style.backgroundColor = 'transparent';
+                this.style.color = '#495057';
+              "
+              onfocus="
+                this.style.outline = '2px solid #0d6efd';
+                this.style.outlineOffset = '2px';
+                this.style.borderRadius = '50%';
+              "
+              onblur="this.style.outline = 'none'"
+            >
+              <i class="bi bi-bell fs-5"></i>
+              <span
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                id="notificationBadge"
+                style="display: none; font-size: 0.65rem"
+              >
+                0
+              </span>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-lg border-0"
+              style="min-width: 360px; max-height: 500px; overflow-y: auto"
+              aria-labelledby="notificationDropdown"
+              id="notificationDropdownMenu"
+            >
+              <li>
+                <h6
+                  class="dropdown-header d-flex justify-content-between align-items-center"
+                >
+                  <span>{{ _('Benachrichtigungen') }}</span>
+                  <button
+                    class="btn btn-link text-decoration-none p-0 small"
+                    id="markAllReadBtn"
+                    style="color: #0d6efd"
+                  >
+                    {{ _('Alle als gelesen markieren') }}
+                  </button>
+                </h6>
+              </li>
+              <li><hr class="dropdown-divider my-1" /></li>
+              <li>
+                <div id="notificationsList" class="px-2">
+                  <div class="text-center text-muted py-4 small">
+                    {{ _('Lade Benachrichtigungen...') }}
+                  </div>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider my-1" /></li>
+              <li>
+                <a
+                  class="dropdown-item text-center small text-primary"
+                  href="#"
+                  id="viewAllNotifications"
+                >
+                  {{ _('Alle anzeigen') }}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Language Button rechts neben Glocke -->
+          <div class="dropdown me-2">
+            <button
+              class="btn language-btn d-flex align-items-center fw-semibold"
+              type="button"
+              id="languageDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <span class="me-2 d-flex align-items-center"
+                ><img
+                  src="https://flagcdn.com/{{ current_lang.flag if current_lang else 'de' }}.svg"
+                  width="22"
+                  alt="{{ current_lang.label if current_lang else 'Deutsch' }}"
+                  style="border-radius: 3px"
+              /></span>
+              <span style="min-width: 70px; text-align: left"
+                >{{ current_lang.label if current_lang else 'Deutsch' }}</span
+              >
+              <span class="ms-2"
+                ><i class="bi bi-chevron-down" style="font-size: 1rem"></i
+              ></span>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="languageDropdown"
+            >
+              {% for opt in language_options %}
+              <li>
+                <a
+                  class="dropdown-item d-flex align-items-center {% if opt.code == current_lang_code %}active{% endif %}"
+                  href="{{ url_for('main.set_language', lang=opt.code) }}"
+                >
+                  <img
+                    src="https://flagcdn.com/{{ opt.flag }}.svg"
+                    width="22"
+                    class="me-2"
+                    alt="{{ opt.label }}"
+                  />{{ opt.label }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            <style>
+              .language-btn {
+                background: #fff !important;
+                border: 1.5px solid #e5e7eb !important;
+                border-radius: 1.5rem !important;
+                box-shadow: none !important;
+                color: #222 !important;
+                padding: 0.35rem 1.2rem 0.35rem 0.8rem !important;
+                font-size: 1.05rem !important;
+                min-height: 38px;
+                transition:
+                  border-color 0.18s,
+                  box-shadow 0.18s;
+              }
+              .language-btn:focus,
+              .language-btn:hover {
+                border-color: #b6d0ff !important;
+                box-shadow: 0 2px 8px 0 rgba(80, 180, 255, 0.1);
+                color: #1a4fbf !important;
+              }
+              .language-btn .bi-chevron-down {
+                color: #888;
+                margin-top: 1px;
+              }
+            </style>
+          </div>
+          <!-- User Avatar/Dropdown with Navigation -->
+          <div class="dropdown">
+            <button
+              class="btn btn-link text-decoration-none d-flex align-items-center justify-content-center p-0 border-0"
+              type="button"
+              id="userDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              style="background: none; transition: transform 0.2s ease"
+              onmouseover="this.style.transform = 'scale(1.05)'"
+              onmouseout="this.style.transform = 'scale(1)'"
+              onfocus="
+                this.style.outline = '2px solid #0d6efd';
+                this.style.outlineOffset = '2px';
+                this.style.borderRadius = '50%';
+              "
+              onblur="this.style.outline = 'none'"
+            >
+              <div
+                class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                style="
+                  width: 40px;
+                  height: 40px;
+                  font-size: 1rem;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                {{ current_user.email[0].upper() }}
+              </div>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-sm border-0"
+              style="min-width: 240px; margin-top: 8px"
+              aria-labelledby="userDropdown"
+            >
+              <!-- User Info Header -->
+              <li>
+                <div class="px-3 py-2 border-bottom">
+                  <div class="d-flex align-items-center mb-1">
+                    <div
+                      class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+                      style="
+                        width: 36px;
+                        height: 36px;
+                        font-size: 0.9rem;
+                        font-weight: 600;
+                      "
+                    >
+                      {{ current_user.email[0].upper() }}
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="fw-medium text-dark">
+                        {{ current_user.email.split('@')[0] }}
+                      </div>
+                      <div class="small text-muted">
+                        {{ current_user.email }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+              <!-- Navigation Items -->
+              <li><hr class="dropdown-divider my-1" /></li>
+
+              <li>
+                <a
+                  class="dropdown-item d-flex align-items-center {% if request.endpoint == 'main.home' %}active bg-primary bg-opacity-10 text-primary{% endif %}"
+                  href="{{ url_for('main.home') }}"
+                >
+                  <i class="bi bi-house-door me-2"></i>{{ _('Startseite') }}
+                </a>
+              </li>
+
+              <li>
+                <a
+                  class="dropdown-item d-flex align-items-center {% if request.endpoint == 'main.create' %}active bg-primary bg-opacity-10 text-primary{% endif %}"
+                  href="{{ url_for('main.create') }}"
+                >
+                  <i class="bi bi-folder-plus me-2"></i>{{ _('Projekt
+                  erstellen') }}
+                </a>
+              </li>
+
+              <li>
+                <a
+                  class="dropdown-item d-flex align-items-center"
+                  href="{{ url_for('main.deleted_requirements_overview') }}"
+                >
+                  <i class="bi bi-trash me-2 text-muted"></i>{{ _('Gelöschte
+                  Anforderungen') }}
+                </a>
+              </li>
+
+              <li><hr class="dropdown-divider my-1" /></li>
+
+              <!-- Logout -->
+              <li>
+                <a
+                  class="dropdown-item d-flex align-items-center text-danger"
+                  href="{{ url_for('auth.logout') }}"
+                >
+                  <i class="bi bi-box-arrow-right me-2"></i>{{ _('Abmelden') }}
+                </a>
+              </li>
+            </ul>
+          </div>
+          {% else %}
+          <!-- Not Authenticated: Login/Register Links -->
+          <div class="d-flex align-items-center gap-2">
+            <a
+              class="btn btn-link text-decoration-none text-dark"
+              href="{{ url_for('auth.login') }}"
+              style="padding: 0.375rem 0.75rem"
+            >
+              {{ _('Anmelden') }}
+            </a>
+            <a
+              class="btn btn-primary"
+              href="{{ url_for('auth.register') }}"
+              style="padding: 0.375rem 0.75rem"
+            >
+              {{ _('Registrieren') }}
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <main class="container mt-5" style="padding-top: 24px !important">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flash-overlay" aria-live="polite" aria-atomic="true">
+        <div class="flash-stack">
+          {% for category, message in messages %}
+          <div
+            class="flash-card flash-{{ 'success' if category == 'success' else 'error' if category in ['error','danger'] else 'warning' if category == 'warning' else 'info' }}"
+            role="status"
+            data-flash
+          >
+            <div class="flash-icon">
+              {% if category == 'success' %}
+              <i class="bi bi-check-circle-fill"></i>
+              {% elif category in ['error','danger'] %}
+              <i class="bi bi-x-circle-fill"></i>
+              {% elif category == 'warning' %}
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              {% else %}
+              <i class="bi bi-info-circle-fill"></i>
+              {% endif %}
+            </div>
+            <div class="flash-text">{{ message }}</div>
+            <button
+              type="button"
+              class="flash-close"
+              aria-label="Close"
+              data-flash-close
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
+
+    <div class="action-overlay" id="actionOverlay" aria-hidden="true">
+      <div class="action-card">
+        <div class="action-spinner"></div>
+        <div class="action-title">{{ _('Vorgang wird ausgeführt') }}</div>
+        <div class="action-subtitle">
+          {{ _('Bitte warten, Seite wird aktualisiert.') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="confirmModal"
+      tabindex="-1"
+      aria-labelledby="confirmModalLabel"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalLabel">
+              {{ _('Bestätigung erforderlich') }}
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body" id="confirmModalBody">
+            {{ _('Möchten Sie diese Aktion wirklich ausführen?') }}
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              {{ _('Abbrechen') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="confirmModalButton"
+            >
+              {{ _('Bestätigen') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global confirmation modal handler
+      let confirmCallback = null;
+      window.APP_LOCALE = "{{ current_lang_code }}";
+
+      function showConfirmModal(
+        message,
+        callback,
+        buttonText = "Bestätigen",
+        buttonClass = "btn-danger",
+      ) {
+        document.getElementById("confirmModalBody").textContent = message;
+        const confirmButton = document.getElementById("confirmModalButton");
+        confirmButton.textContent = buttonText;
+        confirmButton.className = "btn " + buttonClass;
+        confirmCallback = callback;
+
+        const modal = new bootstrap.Modal(
+          document.getElementById("confirmModal"),
+        );
+        modal.show();
+      }
+
+      document
+        .getElementById("confirmModalButton")
+        .addEventListener("click", function () {
+          if (confirmCallback) {
+            confirmCallback();
+            confirmCallback = null;
+          }
+          bootstrap.Modal.getInstance(
+            document.getElementById("confirmModal"),
+          ).hide();
+        });
+
+      // Auto-dismiss flash messages after 4.5 seconds
+      document.addEventListener("DOMContentLoaded", function () {
+        const flashCards = document.querySelectorAll("[data-flash]");
+        flashCards.forEach(function (card) {
+          const closeBtn = card.querySelector("[data-flash-close]");
+          const closeCard = function () {
+            card.classList.add("flash-hide");
+            setTimeout(() => card.remove(), 300);
+          };
+          if (closeBtn) {
+            closeBtn.addEventListener("click", closeCard);
+          }
+          setTimeout(closeCard, 4500);
+        });
+
+        const overlay = document.getElementById("actionOverlay");
+        const showOverlay = function () {
+          if (!overlay) return;
+          overlay.classList.add("is-active");
+          overlay.setAttribute("aria-hidden", "false");
+        };
+        const hideOverlay = function () {
+          if (!overlay) return;
+          overlay.classList.remove("is-active");
+          overlay.setAttribute("aria-hidden", "true");
+        };
+
+        document.querySelectorAll("form").forEach(function (form) {
+          if (form.dataset.noLoading === "true") return;
+          const method = (form.getAttribute("method") || "get").toLowerCase();
+          if (method !== "post") return;
+          form.addEventListener("submit", function () {
+            showOverlay();
+            if (form.dataset.downloadLoading === "true") {
+              window.addEventListener("focus", hideOverlay, { once: true });
+              setTimeout(hideOverlay, 4000);
+            }
+          });
+        });
+
+        document.querySelectorAll("[data-loading-link]").forEach(function (el) {
+          el.addEventListener("click", function () {
+            showOverlay();
+          });
+        });
+
+        document.addEventListener("click", function (event) {
+          const link = event.target.closest("a");
+          if (!link) return;
+          if (link.dataset.noLoading === "true") return;
+          const isDownload =
+            link.hasAttribute("download") ||
+            link.dataset.downloadLoading === "true";
+          if (!isDownload) return;
+          showOverlay();
+          window.addEventListener("focus", hideOverlay, { once: true });
+          setTimeout(hideOverlay, 4000);
+        });
+
+        document.addEventListener("click", function (event) {
+          const link = event.target.closest("a");
+          if (!link) return;
+          if (link.dataset.noLoading === "true") return;
+          if (link.target === "_blank" || link.hasAttribute("download")) return;
+          if (
+            event.defaultPrevented ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey
+          )
+            return;
+          const href = link.getAttribute("href") || "";
+          if (!href || href.startsWith("#")) return;
+          let url;
+          try {
+            url = new URL(href, window.location.origin);
+          } catch (e) {
+            return;
+          }
+          if (url.origin !== window.location.origin) return;
+          if (
+            url.pathname === window.location.pathname &&
+            url.search === window.location.search
+          )
+            return;
+          showOverlay();
+        });
+
+        window.addEventListener("beforeunload", function () {
+          showOverlay();
+        });
+
+        // Load notifications
+        loadNotifications();
+        // Refresh notifications every 30 seconds
+        setInterval(loadNotifications, 30000);
+      });
+
+      // Notification functions
+      function loadNotifications() {
+        fetch("/notifications/unread_count")
+          .then((response) => response.json())
+          .then((data) => {
+            const badge = document.getElementById("notificationBadge");
+            if (data.unread_count > 0) {
+              badge.textContent =
+                data.unread_count > 99 ? "99+" : data.unread_count;
+              badge.style.display = "block";
+            } else {
+              badge.style.display = "none";
+            }
+          })
+          .catch((error) =>
+            console.error("Error loading notification count:", error),
+          );
+
+        fetch("/notifications?per_page=10")
+          .then((response) => response.json())
+          .then((data) => {
+            const list = document.getElementById("notificationsList");
+            if (data.notifications.length === 0) {
+              list.innerHTML =
+                '<div class="text-center text-muted py-4 small">{{ _('Keine Benachrichtigungen') }}</div>';
+            } else {
+              list.innerHTML = data.notifications
+                .map((notif) => {
+                  const timeAgo = getTimeAgo(notif.created_at);
+                  const readClass = notif.is_read ? "" : "bg-light";
+                  const icon = getNotificationIcon(notif.type);
+                  const metadata = notif.metadata || {};
+                  return `
+                  <div class="dropdown-item-text px-3 py-2 ${readClass}" style="cursor: pointer; border-left: ${notif.is_read ? "none" : "3px solid #0d6efd"};" onclick="handleNotificationClick(${notif.id}, '${notif.related_type}', ${notif.related_id || "null"}, ${metadata.requirement_version_id || "null"}, ${metadata.project_id || "null"})">
+                    <div class="d-flex align-items-start">
+                      <i class="${icon} me-2 mt-1" style="color: #0d6efd;"></i>
+                      <div class="flex-grow-1">
+                        <div class="fw-semibold small">${escapeHtml(notif.title)}</div>
+                        ${notif.message ? `<div class="text-muted small mt-1">${escapeHtml(notif.message)}</div>` : ""}
+                        <div class="text-muted" style="font-size: 0.75rem;">${timeAgo}</div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                })
+                .join("");
+            }
+          })
+          .catch((error) =>
+            console.error("Error loading notifications:", error),
+          );
+      }
+
+      function getNotificationIcon(type) {
+        const icons = {
+          comment: "bi-chat-left-text",
+          mention: "bi-at",
+          requirement_created: "bi-plus-circle",
+          requirement_updated: "bi-pencil-square",
+        };
+        return icons[type] || "bi-bell";
+      }
+
+      function getTimeAgo(dateString) {
+        if (!dateString) return "";
+
+        const date = new Date(dateString);
+        const now = new Date();
+        if (isNaN(date.getTime())) {
+          return "";
+        }
+
+        const seconds = Math.floor((now - date) / 1000);
+        const rtf = new Intl.RelativeTimeFormat(window.APP_LOCALE || "de", {
+          numeric: "auto",
+        });
+
+        if (seconds < 0 || seconds < 10) return rtf.format(0, "second");
+        if (seconds < 60) return rtf.format(-Math.max(seconds, 1), "second");
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return rtf.format(-minutes, "minute");
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return rtf.format(-hours, "hour");
+        const days = Math.floor(hours / 24);
+        if (days < 7) return rtf.format(-days, "day");
+        return date.toLocaleDateString(window.APP_LOCALE || "de");
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function handleNotificationClick(
+        notifId,
+        relatedType,
+        relatedId,
+        requirementVersionId,
+        projectId,
+      ) {
+        // Mark as read first
+        fetch(`/notification/${notifId}/read`, { method: "POST" })
+          .then(() => {
+            loadNotifications();
+
+            // Navigate to related item
+            if (relatedType === "requirement_version" && relatedId) {
+              // relatedId is the version_id, we need to get the requirement_id
+              fetch(`/requirement_version/${relatedId}/info`)
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.requirement_id) {
+                    window.location.href = `/requirement/${data.requirement_id}/history`;
+                  } else if (data.project_id) {
+                    window.location.href = `/project/${data.project_id}`;
+                  }
+                })
+                .catch(() => {
+                  // Fallback: go to project if available
+                  if (projectId) {
+                    window.location.href = `/project/${projectId}`;
+                  }
+                });
+            } else if (relatedType === "comment" && requirementVersionId) {
+              // For comments, we have requirement_version_id in metadata
+              fetch(`/requirement_version/${requirementVersionId}/info`)
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.requirement_id) {
+                    window.location.href = `/requirement/${data.requirement_id}/history#comments`;
+                  } else if (data.project_id) {
+                    window.location.href = `/project/${data.project_id}`;
+                  }
+                })
+                .catch(() => {
+                  if (projectId) {
+                    window.location.href = `/project/${projectId}`;
+                  }
+                });
+            } else if (projectId) {
+              // Fallback: go to project
+              window.location.href = `/project/${projectId}`;
+            }
+          })
+          .catch((error) =>
+            console.error("Error marking notification as read:", error),
+          );
+      }
+
+      // Mark all as read
+      document
+        .getElementById("markAllReadBtn")
+        ?.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          fetch("/notifications/mark_all_read", { method: "POST" })
+            .then(() => loadNotifications())
+            .catch((error) =>
+              console.error("Error marking all as read:", error),
+            );
+        });
+    </script>
+    <footer class="bg-light border-top text-center py-3 mt-5">
+      <p class="mb-0 text-muted small">
+        <i class="bi bi-c-circle me-1"></i
+        ><span id="currentYear"></span> Requirements Tool. {{ _('Alle Rechte
+        vorbehalten.') }}
+      </p>
+    </footer>
+    <script>
+      // Set current year dynamically
+      document.getElementById("currentYear").textContent =
+        new Date().getFullYear();
+    </script>
+  </body>
+</html>
