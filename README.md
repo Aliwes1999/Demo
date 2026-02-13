@@ -8,7 +8,8 @@ Um Umgebungsvariablen aus der Datei `.env` auch im VS Code-Terminal zu verwenden
 
 Diese Option findest du in den VS Code Einstellungen (`settings.json`).
 
-# Interface für MBSE-Modelle (Requirements Management Tool)
+# Webbasiertes-Requirements-Engineering-als-Grundlage-automatischer-Codegenerierung-fuer-SysML-v2
+ (Requirements Management Tool)
 
 Eine moderne Flask-basierte Webanwendung für das Management von Software-Anforderungen mit KI-Unterstützung.
 
