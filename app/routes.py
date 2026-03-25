@@ -2615,14 +2615,27 @@ def github_webhook():
 
     # 2. Den neuen Code von GitHub herunterladen (Git Pull)
     try:
-        # Zieht die neuesten Änderungen vom 'main' Branch
-        subprocess.check_output(['git', 'pull', 'origin', 'main'])
+        # WICHTIG: Der genaue Pfad zu deinem Projektordner auf PythonAnywhere
+        repo_dir = '/home/wesali1999/Webbasiertes-Requirements-Engineering-als-Grundlage-automatischer-Codegenerierung-fuer-SysML-v2'
+        
+        # Zieht die neuesten Änderungen vom 'main' Branch und fängt Fehlertexte ab
+        output = subprocess.check_output(
+            ['git', 'pull', 'origin', 'main'], 
+            cwd=repo_dir, 
+            stderr=subprocess.STDOUT
+        )
         
         # 3. Die App auf PythonAnywhere neu starten
-        # WICHTIG: Hier steht dein exakter Username von PythonAnywhere!
         wsgi_file = '/var/www/wesali1999_pythonanywhere_com_wsgi.py'
         subprocess.call(['touch', wsgi_file])
         
-        return jsonify({'status': 'Erfolgreich aktualisiert und neu gestartet!'}), 200
+        # Gibt bei Erfolg auch die Terminal-Ausgabe zurück
+        return jsonify({
+            'status': 'Erfolgreich aktualisiert und neu gestartet!', 
+            'git_output': output.decode('utf-8')
+        }), 200
+        
     except subprocess.CalledProcessError as e:
-        return jsonify({'status': 'Fehler beim Git Pull', 'error': str(e)}), 500
+        # e.output enthält jetzt die genaue Fehlermeldung von Git (z.B. Rechte-Probleme)
+        error_msg = e.output.decode('utf-8') if e.output else str(e)
+        return jsonify({'status': 'Fehler beim Git Pull', 'error': error_msg}), 500
