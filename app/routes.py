@@ -2256,9 +2256,46 @@ def detect_conflicts_route(project_id):
     if len(req_list) < 2:
         return jsonify({'conflicts': []}) # Need at least 2 to have a conflict
         
-    conflicts = detect_conflicts(req_list)
+    # Batch processing to handle large lists
+    batch_size = 25
+    all_conflicts = []
+    for i in range(0, len(req_list), batch_size):
+        batch = req_list[i:i + batch_size]
+        if len(batch) >= 2:
+            batch_conflicts = detect_conflicts(batch)
+            # Adjust IDs to global display_ids
+            for c in batch_conflicts:
+                if 'req_id_1' in c and isinstance(c['req_id_1'], int):
+                    c['req_id_1'] += i
+                if 'req_id_2' in c and isinstance(c['req_id_2'], int):
+                    c['req_id_2'] += i
+            all_conflicts.extend(batch_conflicts)
     
-    return jsonify({'conflicts': conflicts})
+    # Remove duplicates if any
+    seen = set()
+    unique_conflicts = []
+    for c in all_conflicts:
+        key = (c.get('req_id_1'), c.get('req_id_2'), c.get('description'))
+        if key not in seen:
+            seen.add(key)
+            unique_conflicts.append(c)
+    
+    # Fix IDs by parsing description, as AI may hallucinate wrong IDs in description
+    import re
+    for c in unique_conflicts:
+        ids = re.findall(r'(?:ID|Anforderung) (\d+)', c.get('description', ''))
+        if len(ids) >= 2:
+            # Adjust to global IDs if needed
+            id1 = int(ids[0])
+            id2 = int(ids[1])
+            # If IDs are within batch range, adjust; else use as is
+            c['req_id_1'] = id1
+            c['req_id_2'] = id2
+        elif not c.get('req_id_1') or not c.get('req_id_2'):
+            # Fallback if no IDs in description
+            pass
+    
+    return jsonify({'conflicts': unique_conflicts})
 
 
 @bp.route("/requirement_version/<int:version_id>/generate_tests", methods=['POST'])

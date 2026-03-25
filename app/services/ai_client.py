@@ -351,10 +351,10 @@ def detect_conflicts(requirements_list: list[dict]) -> list[dict]:
 
     client = OpenAI(api_key=api_key)
 
-    # Prepare requirements text
+    # Prepare requirements text - shorten descriptions to avoid AI overload
     req_text = ""
     for idx, req in enumerate(requirements_list):
-        req_text += f"ID {req['id']}: {req['title']}\nDescription: {req['description']}\n\n"
+        req_text += f"ID {req['id']}: {req['title']}\nDescription: {req['description'][:150]}\n\n"
 
         system_prompt = """
         Du bist ein Experte für Requirements Engineering und willst deine Anforderungsliste auf Qualität und Logik prüfen.
@@ -363,13 +363,15 @@ def detect_conflicts(requirements_list: list[dict]) -> list[dict]:
         Analysiere die Anforderungen sorgfältig. Ein Konflikt besteht vor allem, wenn zwei Anforderungen nicht gleichzeitig erfüllt werden können.
         Auch können Anforderungen mit gleichem Inhalt unterschiedlich ausgedrückt werden, sodass der Widerspruch in grossen Mengen nicht direkt ersichtlich ist.
 
+        WICHTIG: Setze req_id_1 und req_id_2 IMMER als die exakten Zahlen aus der Eingabe (z.B. ID 1, ID 2). Verwende NIEMALS 'undefined', Platzhalter oder andere IDs. Beschreibe den Konflikt mit den gleichen IDs, die du in req_id_1 und req_id_2 setzt.
+
         Antworte ausschließlich mit gültigem JSON in folgender Struktur:
         {
             "conflicts": [
                 {
-                    "req_id_1": "ID der ersten Anforderung",
-                    "req_id_2": "ID der zweiten Anforderung",
-                    "description": "Erklärung des Konflikts",
+                    "req_id_1": 1,
+                    "req_id_2": 2,
+                    "description": "Erklärung des Konflikts mit ID 1 und ID 2",
                     "severity": "Hoch" (oder "Mittel", "Niedrig")
                 }
             ]
@@ -386,7 +388,7 @@ def detect_conflicts(requirements_list: list[dict]) -> list[dict]:
                 {"role": "user", "content": f"Hier sind die Anforderungen:\n\n{req_text}"}
             ],
             temperature=0.1,
-            max_tokens=1000,
+            max_tokens=3000,
             response_format={"type": "json_object"}
         )
 

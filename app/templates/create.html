@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       html += `
                       <div class="list-group-item">
                           <div class="d-flex w-100 justify-content-between">
-                              <h6 class="mb-1 text-danger"><i class="bi bi-lightning-fill"></i> ${i18n.conflictBetween} #${c.req_id_1} & #${c.req_id_2}</h6>
+                              <h6 class="mb-1 text-danger"><i class="bi bi-lightning-fill"></i> ${i18n.conflictBetween} ${c.req_id_1} & ${c.req_id_2}</h6>
                         <span class="badge bg-danger">${c.severity || i18n.severityHigh}</span>
                           </div>
                           <p class="mb-1">${c.description}</p>
