@@ -331,13 +331,15 @@ def _validate_and_normalize_requirements(requirements: list, columns: list = Non
 
 def detect_conflicts(requirements_list: list[dict]) -> list[dict]:
     """
-    Analyzes a list of requirements for logical contradictions using AI.
+    Analyzes a complete requirements set for quality assurance including logical contradictions,
+    redundancy, completeness, consistency, priorities, structure, modifiability, clarity,
+    testability, feasibility, traceability, and stakeholder coverage using AI.
 
     Args:
         requirements_list (list[dict]): List of dicts representing requirements (title, description).
 
     Returns:
-        list[dict]: List of detected conflicts.
+        list[dict]: List of detected conflicts, issues, and problems.
     """
     # Get configuration
     api_key = config.OPENAI_API_KEY
@@ -351,34 +353,48 @@ def detect_conflicts(requirements_list: list[dict]) -> list[dict]:
 
     client = OpenAI(api_key=api_key)
 
+    # Define system prompt once before the loop (optimization)
+    system_prompt = """
+    Du bist ein Experte für Requirements Engineering und willst deine gesamte Anforderungsliste auf Qualität und Logik prüfen.
+    Deine Aufgabe ist es, eine Liste von Anforderungen systematisch auf folgende Aspekte zu analysieren:
+
+    ANALYSE-KRITERIEN:
+    1. Konflikte und Widersprüche: Zwei Anforderungen, die nicht gleichzeitig erfüllt werden können
+    2. Redundanz: Anforderungen mit gleichem Inhalt, die unterschiedlich ausgedrückt sind
+    3. Vollständigkeit: Abdeckung aller funktionalen und nicht-funktionalen Anforderungen für das System und seinen Umfang
+    4. Konsistenz: Kohärenz und Widerspruchsfreiheit der gesamten Anforderungsmenge
+    5. Prioritäten: Korrekte Kennzeichnung von Must/Should/Can-Anforderungen
+    6. Strukturierung: Logische Organisation und Gruppierung der Anforderungen
+    7. Modifizierbarkeit: Individuelle Formulierung, leichte Anpassbarkeit, keine gemischten oder zu langen Anforderungen
+    8. Klarheit und Verständlichkeit: Eindeutigkeit der Formulierungen
+    9. Testbarkeit und Verifizierbarkeit: Anforderungen müssen überprüfbar sein (Erstellung von Testfällen möglich)
+    10. Machbarkeit: Realistische und implementierbare Anforderungen
+    11. Rückverfolgbarkeit: Verfolgbarkeit von Anforderungen durch das System
+    12. Stakeholder-Abdeckung: Berücksichtigung aller Stakeholder (Nutzer, Betreiber, Hersteller, rechtliche Anforderungen)
+
+    Analysiere die Anforderungen sorgfältig und erkenne auch potenzielle Gefahren, Probleme und zukünftige Schwierigkeiten, selbst wenn keine direkten Widersprüche vorhanden sind.
+
+    WICHTIG: Setze req_id_1 und req_id_2 IMMER als die exakten Zahlen aus der Eingabe (z.B. ID 1, ID 2). Verwende NIEMALS 'undefined', Platzhalter oder andere IDs. Beschreibe die Problematik mit den gleichen IDs, die du in req_id_1 und req_id_2 setzt.
+
+    Antworte ausschließlich mit gültigem JSON in folgender Struktur:
+    {
+        "conflicts": [
+            {
+                "req_id_1": 1,
+                "req_id_2": 2,
+                "description": "Erklärung des Konflikts/der Problematik mit ID 1 und ID 2",
+                "severity": "Hoch" (oder "Mittel", "Niedrig")
+            }
+        ]
+    }
+
+    Wenn keine Konflikte oder Probleme gefunden werden, antworte mit: {"conflicts": []}
+    """
+
     # Prepare requirements text - shorten descriptions to avoid AI overload
     req_text = ""
     for idx, req in enumerate(requirements_list):
         req_text += f"ID {req['id']}: {req['title']}\nDescription: {req['description'][:150]}\n\n"
-
-        system_prompt = """
-        Du bist ein Experte für Requirements Engineering und willst deine Anforderungsliste auf Qualität und Logik prüfen.
-        Deine Aufgabe ist es, eine Liste von Anforderungen auf Konflikte, Widersprüche und redundante Anforderungen zu analysieren.
-
-        Analysiere die Anforderungen sorgfältig. Ein Konflikt besteht vor allem, wenn zwei Anforderungen nicht gleichzeitig erfüllt werden können.
-        Auch können Anforderungen mit gleichem Inhalt unterschiedlich ausgedrückt werden, sodass der Widerspruch in grossen Mengen nicht direkt ersichtlich ist.
-
-        WICHTIG: Setze req_id_1 und req_id_2 IMMER als die exakten Zahlen aus der Eingabe (z.B. ID 1, ID 2). Verwende NIEMALS 'undefined', Platzhalter oder andere IDs. Beschreibe den Konflikt mit den gleichen IDs, die du in req_id_1 und req_id_2 setzt.
-
-        Antworte ausschließlich mit gültigem JSON in folgender Struktur:
-        {
-            "conflicts": [
-                {
-                    "req_id_1": 1,
-                    "req_id_2": 2,
-                    "description": "Erklärung des Konflikts mit ID 1 und ID 2",
-                    "severity": "Hoch" (oder "Mittel", "Niedrig")
-                }
-            ]
-        }
-
-        Wenn keine Konflikte gefunden werden, antworte mit: {"conflicts": []}
-        """
 
     try:
         response = client.chat.completions.create(
