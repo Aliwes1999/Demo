@@ -678,28 +678,32 @@
     <div class="mb-3">
       <h6 class="mb-2">Funktionale Bewertung</h6>
       <ul class="mb-0">
-        <li><strong>Einstufung:</strong> ${escapeHtml(functional.classification || "–")}</li>
+        <li><strong>Kategorisierung:</strong> ${escapeHtml(functional.Kategorisierung || "–")}</li>
         <li><strong>Vollständigkeit:</strong> ${escapeHtml(functional.completeness || "–")}</li>
         <li><strong>Verständlichkeit:</strong> ${escapeHtml(functional.clarity || "–")}</li>
         <li><strong>Fachliche Korrektheit:</strong> ${escapeHtml(functional.correctness || "–")}</li>
+        <li><strong>Realisierbarkeit:</strong> ${escapeHtml(functional.feasibility || "–")}</li>
+        <li><strong>Verifizierbarkeit:</strong> ${escapeHtml(functional.verifiability || "–")}</li>
         <li><strong>Gesamtbewertung:</strong> ${escapeHtml(functional.summary || "–")}</li>
       </ul>
     </div>
     <div class="mb-3">
       <h6 class="mb-2">Quantifizierbare Bewertung</h6>
       <ul class="mb-0">
-        <li><strong>Quantifizierbar:</strong> ${quantBadge}</li>
+       
         <li><strong>Messgröße:</strong> ${metricText}</li>
         <li><strong>SysML-Constraint:</strong> ${constraintText}</li>
       </ul>
     </div>
-    <div>
+      <!--  Dieser Abschnitt wurde auskommentiert aber nicht gelöscht, falls in der Zukunft was neues eingefügt werden sollte, kann hier  ersetzt oder ergänzt werden.  
+      <div>
       <h6 class="mb-2">Status & Ampellogik</h6>
       <ul class="mb-0">
         <li><strong>Status:</strong> ${escapeHtml(statusContext.status)}</li>
         <li><strong>Ampel:</strong> ${ampelBadge}</li>
       </ul>
-    </div>
+    </div> 
+      -->
   `;
   }
 
