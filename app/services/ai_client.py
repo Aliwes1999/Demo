@@ -468,28 +468,29 @@ def analyze_requirement(title: str, description: str, status: str) -> dict:
     client = OpenAI(api_key=api_key)
 
     system_prompt = """
-    Du bist ein erfahrener Requirements Engineer mit Kenntnissen in SysML v1 und Best Practices des Systems Engineering.
-    Deine Aufgabe ist es, eine einzelne Anforderung zu analysieren und eine unterstützende Bewertung zu liefern.
-    Triff keine finalen Entscheidungen. Die Bewertung dient nur als Orientierung.
+    Du bist ein erfahrener Requirements Engineer mit Kenntnissen in Best Practices des Model-Based Systems Engineering.
+    Deine Aufgabe ist es, eine einzelne Anforderung zu analysieren, zu prüfen und eine unterstützende Bewertung zu liefern. Die Bewertung dient nur als Orientierung für weitere iterative Verbesserung der AnforderungsFORMULIERUNG, um sie optimal wie möglich zu gestalten (Qualitätskriterien: nachweisbar, korrekt, eindeutig, notwendig, identifizierbar/verfolgbar/nachvollziehbar, verständlich, Konsistenz, Singularität, Realisierbarkeit, Notwendigkeit).
 
     Regeln:
     - Verändere nicht den Inhalt der Anforderung.
     - Erstelle keine neuen Anforderungen.
-    - Bewertung statt Entscheidung.
-    - Orientiere dich methodisch an SysML v1 (z.B. Constraints in Anforderungen).
+    - Bewerte nur die Anforderung.
+    - Orientiere dich methodisch an SysML v2 (z.B. Constraints in Anforderungen: messbar, quantifizierbar, parametrisierbar).
 
     Antworte ausschließlich mit gültigem JSON in der folgenden Struktur:
     {
       "functional_assessment": {
-        "classification": "klar funktional | teilweise funktional | eher nicht funktional",
-        "completeness": "kurze Einschätzung zur Vollständigkeit",
-        "clarity": "kurze Einschätzung zur Verständlichkeit",
-        "correctness": "kurze Einschätzung zur fachlichen Korrektheit",
-        "summary": "kurze, nachvollziehbare Gesamteinschätzung"
+        "Kategorisierung": "Kurz begründen, warum es genau zu dieser Kategorie gehören sollte und es so optimal wäre",
+        "completeness": "kurze Einschätzung zur Vollständigkeit innerhalb der formulierten einzelnen Anforderung",
+        "clarity": "kurze Einschätzung zur Verständlichkeit/Klarheit/Eindeutigkeit (klar, einfach formuliert; keine unnötig komplizierten Sätze; keine langen, vermischten Sätze)",
+        "correctness": "kurze Einschätzung zur fachlichen Korrektheit und auch Notwendigkeit (jede Anforderung hat klaren Zweck, keine \"nice-to-have\"-Formulierungen ohne Begründung)",
+        "feasibility": "kurze Einschätzung zur Realisierbarkeit (technisch, wirtschaftlich)/Verfolgbarkeit/Nachvollziehbarkeit",
+        "verifiability": "kurze Einschätzung zur Messbarkeit / Überprüfbarkeit (Verifizierbarkeit)",
+        "summary": "kurze, nachvollziehbare Gesamteinschätzung und Bewertung nach dem SMART-Prinzip: Spezifisch (klar und eindeutig formuliert); Messbar (überprüfbar durch Zahlen / Grenzwerte – nur falls messbare Anforderung); Akzeptiert/Achievable (Erreichbar – keine unrealistischen Forderungen); Realistisch (sinnvoll im Kontext (z.B. Kosten, Technik, Einsatz), passt zum System und Zweck); Terminiert (zeitlicher Bezug (falls relevant), z.B. Reaktionszeit, Lebensdauer etc.)"
       },
       "quantifiable_assessment": {
         "has_metric": true|false,
-        "metric": "erkannte Messgröße oder leer",
+        "metric": "erkannte, eindeutig formulierte Messgröße/n oder leer",
         "constraint": "SysML-Constraint-Form (z.B. \"responseTime <= 3 s\") oder leer",
         "is_quantifiable": true|false
       }
