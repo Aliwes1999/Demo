@@ -535,3 +535,93 @@ def analyze_requirement(title: str, description: str, status: str) -> dict:
         return json.loads(response_text)
     except Exception as e:
         return {"error": f"Fehler bei der Analyse: {str(e)}"}
+
+
+def improve_requirement_from_analysis(analysis: dict, title: str, description: str, status: str) -> dict:
+    """
+    Generate improvement suggestion based on analysis results.
+
+    Args:
+        analysis (dict): Analysis result from analyze_requirement().
+        title (str): Current requirement title.
+        description (str): Current requirement description.
+        status (str): Current requirement status.
+
+    Returns:
+        dict: Improvement suggestion with improved_title, improved_description, and rationale.
+    """
+    api_key = config.OPENAI_API_KEY
+    model = config.OPENAI_MODEL or "gpt-4o-mini"
+
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY not set")
+
+    client = OpenAI(api_key=api_key)
+
+    # Extract key findings from analysis
+    weakness_points = []
+    functional_assessment = analysis.get("functional_assessment", {})
+    
+    if functional_assessment:
+        if "clarity" in functional_assessment:
+            clarity = functional_assessment["clarity"].lower()
+            if "schwach" in clarity or "unklar" in clarity or "verbesserung" in clarity:
+                weakness_points.append(f"Klarheit: {functional_assessment['clarity']}")
+        
+        if "verifiability" in functional_assessment:
+            verif = functional_assessment["verifiability"].lower()
+            if "schwach" in verif or "nicht messbar" in verif or "verbesserung" in verif:
+                weakness_points.append(f"Messbarkeit: {functional_assessment['verifiability']}")
+        
+        if "completeness" in functional_assessment:
+            complete = functional_assessment["completeness"].lower()
+            if "unvollständig" in complete or "fehlendes" in complete:
+                weakness_points.append(f"Vollständigkeit: {functional_assessment['completeness']}")
+
+    system_prompt = """
+    Du bist ein erfahrener Requirements Engineer mit Kenntnissen in Best Practices des Model-Based Systems Engineering.
+    Deine Aufgabe ist es, basierend auf vorliegenden Schwachstellen einer Anforderung, konkrete Verbesserungsvorschläge zu machen.
+
+    Regeln:
+    - Verbessere nur die identifizierten Schwachstellen, keine unnötigen Änderungen.
+    - Behalte den Sinn und die Absicht der ursprünglichen Anforderung bei.
+    - Mache den Text klarer, messbarer und eindeutiger.
+    - Orientiere dich methodisch an SysML v2 Best Practices.
+    - Nutze konkrete, messbare Kriterien where applicable.
+
+    Antworte ausschließlich mit gültigem JSON in der folgenden Struktur:
+    {
+      "improved_title": "Verbesserte Titelformulierung",
+      "improved_description": "Verbesserte Beschreibung mit klaren Anforderungen und Messbarkeit where applicable",
+      "improvement_rationale": "Kurze Erklärung, welche Schwachstellen behoben wurden",
+      "improvements": ["Punkt 1", "Punkt 2", ...]
+    }
+    """
+
+    weakness_text = "\n".join(weakness_points) if weakness_points else "Allgemeine Verbesserung der Anforderungsqualität"
+
+    user_message = (
+        "Basierend auf der Analyse einer Anforderung wurden folgende Schwachstellen identifiziert:\n\n"
+        f"{weakness_text}\n\n"
+        "ORIGINALE ANFORDERUNG:\n"
+        f"Titel: {title}\n"
+        f"Beschreibung: {description}\n"
+        f"Status: {status}\n\n"
+        "Bitte erstelle einen VERBESSERTEN Vorschlag für diese Anforderung, der die identifizierten Schwachstellen behebt."
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.3,
+            max_tokens=800,
+            response_format={"type": "json_object"}
+        )
+        response_text = response.choices[0].message.content.strip()
+        return json.loads(response_text)
+    except Exception as e:
+        return {"error": f"Fehler beim Erstellen des Verbesserungsvorschlags: {str(e)}"}
