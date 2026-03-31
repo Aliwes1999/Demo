@@ -2633,6 +2633,35 @@ def analyze_requirement_route(version_id):
     }
     return jsonify({'result': analysis})
 
+
+@bp.route("/requirement_version/<int:version_id>/improve", methods=['POST'])
+@login_required
+def improve_requirement_route(version_id):
+    from .services.ai_client import analyze_requirement, improve_requirement_from_analysis
+
+    version = RequirementVersion.query.get_or_404(version_id)
+    try:
+        check_version_access(version)
+    except:
+        return jsonify({'error': 'Zugriff verweigert'}), 403
+
+    # Get the latest analysis (we need it to generate improvements)
+    analysis_result = request.json.get('analysis_result')
+    
+    if not analysis_result:
+        # If no analysis result provided, generate one first
+        analysis_result = analyze_requirement(version.title, version.description, version.status)
+
+    # Generate improvement suggestion based on analysis
+    improvement = improve_requirement_from_analysis(
+        analysis_result,
+        version.title,
+        version.description,
+        version.status
+    )
+
+    return jsonify({'result': improvement})
+
 # --- GITHUB WEBHOOK FÜR AUTOMATISCHES DEPLOYMENT ---
 
 # Denke dir hier ein sicheres Passwort aus (ohne Leerzeichen). 
