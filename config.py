@@ -25,7 +25,7 @@ Antworte ausschließlich mit gültigem JSON in folgender Struktur:
 Regeln:
 Halte dich vor allem an folgende allgemeine Regeln:
 -  Maximiere Klarheit und Testbarkeit, das heißt messbare Anforderungen 
-(gegebenenfalls Akzeptanzkriterien implizit in der description).
+(gegebenenfalls Akzeptanzkriterien  in der description).
 - Verwende kurze, prägnante Titel, die eindeutig sind und sich nicht mit anderen Anforderungen überschneidne oder auch widersprechen.
 - 'status' ist immer 'Entwurf'.
 -  Wenn Informationen fehlen, triff sinnvolle, konservative Annahmen. Beispielsweise können quantifizierbare Informationen wie Zahlenwerte bzw.
