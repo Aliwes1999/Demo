@@ -1,0 +1,30 @@
+{% extends "base.html" %} {% block title %}{{ _('Funktionen') }}{% endblock %}
+{% block content %}
+
+<style>
+  .features-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+</style>
+
+<!-- Features Header -->
+<div class="features-header py-4 border rounded-4 shadow-sm">
+  <div class="container">
+    <div class="features-box px-4 py-4 px-md-5 py-md-5">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <span class="text-secondary text-uppercase fw-bold small ls-1">
+            {{ _('Funktionen') }}
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock %}
