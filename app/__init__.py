@@ -41,7 +41,7 @@ def create_app():
     from .routes import bp
     from .auth import auth_bp
     from .agent import agent_bp
-    from .features import features_bp
+    from .features.features import features_bp
     app.register_blueprint(bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(agent_bp)
