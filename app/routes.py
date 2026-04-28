@@ -1735,7 +1735,7 @@ def export_excel(project_id):
             selected_items = []
 
     def _status_is_release(value: str) -> bool:
-        return str(value or "").lower() == "freigabe"
+        return str(value or "").lower() != "verworfen"
 
     def _find_revision_snapshot(revision_version_id, revision_key_value):
         if not revision_version_id or not revision_key_value:
@@ -1849,7 +1849,7 @@ def export_excel(project_id):
             latest_released = req.get_latest_released_version()
             if not latest_released:
                 continue
-            if latest_released.status != 'Freigabe':
+            if latest_released.status == 'Verworfen':
                 continue
 
             custom_data = latest_released.get_custom_data()
