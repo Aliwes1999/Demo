@@ -2028,9 +2028,9 @@ def import_excel(project_id):
         
         for idx, header in enumerate(headers):
             header_lower = header.lower()
-            if header_lower in ['title', 'titel']:
+            if header_lower in ['title', 'titel', 'anforderung', 'name']:
                 title_idx = idx
-            elif header_lower in ['description', 'beschreibung']:
+            elif header_lower in ['description', 'beschreibung', 'requirement']:
                 description_idx = idx
             elif header_lower in ['category', 'kategorie']:
                 category_idx = idx
@@ -2060,11 +2060,7 @@ def import_excel(project_id):
                 continue
             
             category = str(row[category_idx]).strip() if category_idx is not None and category_idx < len(row) and row[category_idx] else ""
-            status = str(row[status_idx]).strip() if status_idx is not None and status_idx < len(row) and row[status_idx] else "Entwurf"
-            
-            # Validate status
-            if status not in ['Entwurf', 'In Bearbeitung', 'Freigabe']:
-                status = 'Entwurf'
+            status = "Entwurf"
             
             # Create requirement
             from .agent import normalize_key
