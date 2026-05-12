@@ -1299,4 +1299,37 @@ function pollRequirementsStatus() {
     })
     .catch((err) => console.error("Polling error:", err));
 }
+
+async function generateSpecification(projectId, docType) {
+  const outputDiv = document.getElementById("specification-output");
+  outputDiv.style.display = "block";
+  outputDiv.innerHTML =
+    '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p>Generiere Dokument...</p></div>';
+
+  try {
+    const response = await fetch(
+      `/project/${projectId}/generate_specification`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ doc_type: docType }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (data.status === "success") {
+      outputDiv.innerHTML = `<pre class="bg-light p-3 rounded border">${data.document}</pre>`;
+    } else {
+      outputDiv.innerHTML = `<div class="alert alert-danger">${data.message || "Ein Fehler ist aufgetreten."}</div>`;
+    }
+  } catch (error) {
+    console.error("Error generating specification:", error);
+    outputDiv.innerHTML =
+      '<div class="alert alert-danger">Netzwerkfehler oder Serverfehler aufgetreten.</div>';
+  }
+}
+
 ('console.log("TEST-LOADED-PROJECT.JS");');
