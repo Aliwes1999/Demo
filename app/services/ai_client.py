@@ -625,3 +625,125 @@ def improve_requirement_from_analysis(analysis: dict, title: str, description: s
         return json.loads(response_text)
     except Exception as e:
         return {"error": f"Fehler beim Erstellen des Verbesserungsvorschlags: {str(e)}"}
+
+
+def generate_specification_document(requirements_list: list[dict], doc_type: str) -> str:
+    """
+    Generates a specification document (Lastenheft or Pflichtenheft) from a list of requirements.
+
+    Args:
+        requirements_list (list[dict]): List of requirement dicts with 'title' and 'description'.
+        doc_type (str): Type of document, either 'lastenheft' or 'pflichtenheft'.
+
+    Returns:
+        str: Generated document in Markdown format.
+    
+    Raises:
+        ValueError: If doc_type is invalid or OPENAI_API_KEY is not set.
+        RuntimeError: If OpenAI API call fails.
+    """
+    # Get configuration
+    api_key = config.OPENAI_API_KEY
+    model = config.OPENAI_MODEL or "gpt-4o-mini"
+    
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable must be set.")
+    
+    if doc_type not in ['lastenheft', 'pflichtenheft']:
+        raise ValueError("doc_type must be 'lastenheft' or 'pflichtenheft'.")
+    
+    # Initialize OpenAI client
+    client = OpenAI(api_key=api_key)
+    
+    # Set system prompt based on doc_type
+    if doc_type == 'lastenheft':
+        system_prompt = """
+Du bist ein hochqualifizierter Senior Requirements Engineer und Systemanalytiker.
+Deine Aufgabe ist es, aus einer übergebenen Liste von Roh-Anforderungen ein professionelles, detailliertes Lastenheft (Product Requirements Document) zu erstellen.
+
+ZIEL DES DOKUMENTS:
+Das Lastenheft beschreibt die Gesamtheit der Forderungen des Auftraggebers an die Lieferungen und Leistungen des Auftragnehmers. Es fokussiert sich ausschließlich auf das WAS und WOFÜR (Zweck, Ziele, Systemgrenzen), nicht auf die technische Umsetzung.
+
+STRUKTURVORGABE (Halte dich strikt an dieses Markdown-Template):
+# Lastenheft
+
+## 1. Einführung und Zielsetzung
+[Fasse den Hauptzweck des Systems basierend auf den Anforderungen in 2-3 Absätzen zusammen. Was ist der geschäftliche Wert?]
+
+## 2. Systemgrenzen und Kontext
+[Definiere, was zum System gehört und was explizit nicht dazu gehört, abgeleitet aus den Daten.]
+
+## 3. Funktionale Anforderungen
+[Gruppiere hier alle funktionalen Anforderungen logisch. Nutze Tabellen oder klare Listen. Referenziere IMMER die originale ID der Anforderung (z.B. REQ-1).]
+
+## 4. Nicht-funktionale Anforderungen & Rahmenbedingungen
+[Führe hier Performance, Sicherheit, Ergonomie, und andere Qualitätsmerkmale auf. Beachte besonders Anforderungen, die als 'is_quantifiable: true' markiert sind.]
+
+## 5. Abnahmekriterien
+[Fasse zusammen, woran der Erfolg des Projekts gemessen wird.]
+
+REGELN UND EINSCHRÄNKUNGEN:
+- ERFINDE KEINE neuen Anforderungen, Funktionen oder Stakeholder, die nicht im bereitgestellten Text stehen.
+- Wenn Informationen für ein Kapitel fehlen, schreibe: "Basierend auf den aktuellen Anforderungen liegen hierzu keine Informationen vor."
+- Formuliere präzise, objektiv und im professionellen Business-Kontext.
+- Gib AUSSCHLIESSLICH das fertige Markdown-Dokument zurück. Keine Einleitung, keine Erklärungen davor oder danach.
+"""
+    elif doc_type == 'pflichtenheft':
+        system_prompt = """
+Du bist ein erfahrener Systemarchitekt und Model-Based Systems Engineering (MBSE) Experte.
+Deine Aufgabe ist es, aus einer übergebenen Liste von Systemanforderungen ein detailliertes Pflichtenheft (System Requirements Specification) zu erstellen.
+
+ZIEL DES DOKUMENTS:
+Das Pflichtenheft beschreibt in konkreter Form, WIE und WOMIT die im Lastenheft formulierten Anforderungen technisch umgesetzt werden. Es dient als Grundlage für die Entwickler.
+
+STRUKTURVORGABE (Halte dich strikt an dieses Markdown-Template):
+# Pflichtenheft
+
+## 1. Systemarchitektur und Lösungsansatz
+[Beschreibe das grundlegende technische Konzept und die Systemarchitektur, die sich aus den Anforderungen ableiten lässt.]
+
+## 2. Technische Umsetzung der Funktionen
+[Gliedere die funktionalen Anforderungen in technische Module oder Komponenten. Wie werden diese software- oder hardwaretechnisch realisiert? Beziehe dich auf die Original-IDs.]
+
+## 3. Datenmodell und Schnittstellen
+[Welche Daten müssen verarbeitet werden? Welche internen oder externen Schnittstellen (APIs, Signale, Stoffflüsse) lassen sich aus den Anforderungen ableiten?]
+
+## 4. Systemanforderungen und Constraints (SysML v2 Kontext)
+[Analysiere die quantifizierbaren Anforderungen und formuliere sie als messbare technische Constraints (z.B. Antwortzeit <= 3s, Speicherlimit). Nutze MBSE-Prinzipien.]
+
+## 5. Entwicklungs- und Betriebsumgebung
+[Fasse zusammen, welche Rahmenbedingungen für die Entwicklung und den späteren Betrieb gelten.]
+
+REGELN UND EINSCHRÄNKUNGEN:
+- Erfinde keine absurden technischen Details, sondern leite realistische, branchenübliche Architekturansätze aus den Anforderungen ab.
+- Behalte den Bezug zu den originalen Anforderungs-IDs stets bei, um Traceability (Rückverfolgbarkeit) zu gewährleisten.
+- Wenn der übergebene Text keine Rückschlüsse auf ein Kapitel zulässt, notiere: "Technischer Ansatz noch zu definieren."
+- Gib AUSSCHLIESSLICH das fertige Markdown-Dokument zurück. Keine Erklärungen davor oder danach.
+"""
+    
+    # Build user message from requirements_list
+    req_text = ""
+    for req in requirements_list:
+        title = req.get('title', 'Unbekannter Titel')
+        description = req.get('description', 'Keine Beschreibung')
+        req_text += f"Titel: {title}\nBeschreibung: {description}\n\n"
+    
+    user_message = f"Hier sind die Anforderungen:\n\n{req_text}"
+    
+    try:
+        # Call OpenAI Chat Completions API
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.2,
+            max_tokens=4000
+        )
+        
+        # Extract and return response content
+        return response.choices[0].message.content.strip()
+    
+    except Exception as e:
+        raise RuntimeError(f"OpenAI request failed: {str(e)}")

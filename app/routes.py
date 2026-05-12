@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import json
 from . import db
 from .models import Project, Requirement, RequirementVersion, RequirementComment, Notification, User
-from .services.ai_client import generate_requirements
+from .services.ai_client import generate_requirements, generate_specification_document
 import subprocess
 import hmac
 import hashlib
@@ -200,6 +200,45 @@ def create_manual_requirement(project_id):
         pass
     flash(f"Anforderung '{title}' wurde erfolgreich erstellt.", "success")
     return redirect(url_for('main.manage_project', project_id=project_id))
+
+@bp.route("/project/<int:project_id>/generate_specification", methods=['POST'])
+@login_required
+def generate_specification(project_id):
+    project = Project.query.get_or_404(project_id)
+    check_project_access(project)
+    
+    try:
+        data = request.get_json()
+        if not data or 'doc_type' not in data:
+            return jsonify({"status": "error", "message": "doc_type is required"}), 400
+        
+        doc_type = data['doc_type']
+        if doc_type not in ['lastenheft', 'pflichtenheft']:
+            return jsonify({"status": "error", "message": "doc_type must be 'lastenheft' or 'pflichtenheft'"}), 400
+        
+        # Hole alle Anforderungen des Projekts
+        requirements = Requirement.query.filter_by(project_id=project_id, is_deleted=False).all()
+        
+        req_list = []
+        for req in requirements:
+            latest_version = req.get_latest_version()
+            if latest_version and latest_version.status != 'Verworfen':
+                req_list.append({
+                    'title': latest_version.title,
+                    'description': latest_version.description
+                })
+        
+        if not req_list:
+            return jsonify({"status": "error", "message": "No valid requirements found"}), 400
+        
+        # Rufe die Funktion auf
+        document = generate_specification_document(req_list, doc_type)
+        
+        return jsonify({"status": "success", "document": document})
+    
+    except Exception as e:
+        current_app.logger.error(f"Error generating specification: {str(e)}")
+        return jsonify({"status": "error", "message": "An error occurred while generating the document"}), 500
 
 def check_project_access(project):
     """Check if current user has access to the project (owner or shared)."""
