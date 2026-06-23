@@ -1,26 +1,30 @@
-# Kopie von script_SysML/sysml_v2_generator.py für App-Import
-# (Originaldatei bleibt erhalten)
-
-import os
 import pandas as pd
-from pathlib import Path
 from datetime import datetime
-import subprocess
-import sys
 
-try:
-    import openpyxl
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl", "--break-system-packages"])
-    import openpyxl
+# ==========================================
+# 1.Diese bearbeitete Version vom Sysml Generator ist für das Lesen von den Requirements direkt aus der webansicht, statt aus dem Download Ordner 
+# ==========================================
 
 def sanitize_package_name(category):
-    if pd.isna(category):
-        return "Uncategorized"
-    return str(category).replace("-", "_").replace(" ", "_").replace(".", "_")
+    category_mapping = {
+        "Sicherheit": "SafetyRequirements",
+        "Leistung": "PerformanceRequirements",
+        "Funktional": "FunctionalRequirements",
+        "Nicht-Funktional": "NonFunctionalRequirements",
+        "Usability": "UsabilityRequirements",
+        "Zuverlässigkeit": "ReliabilityRequirements",
+        "Wartbarkeit": "MaintainabilityRequirements",
+        "Kompatibilität": "CompatibilityRequirements",
+    }
+    if category in category_mapping:
+        return category_mapping[category]
+    sanitized = str(category).replace(" ", "").replace("-", "").replace("_", "")
+    return f"{sanitized}Requirements"
+
 
 def sanitize_requirement_id(req_id):
     return str(req_id).replace("-", "_").replace(" ", "_").replace(".", "_")
+
 
 def escape_string(text):
     if pd.isna(text):
@@ -30,9 +34,19 @@ def escape_string(text):
     text = text.replace('"', '\\"')
     return text
 
-def generate_sysmlv2_code(df, output_path):
+# ==========================================
+# 2. ANGEPASSTE GENERATOR-FUNKTION
+# ==========================================
+# Anstatt in eine Datei zu schreiben, gibt diese Funktion 
+# nun den fertigen Code als String zurück.
+
+def generate_sysmlv2_code(df):
+    """
+    Generiert SysML v2 Code aus dem DataFrame und gibt ihn als String zurück.
+    """
     categories = df["Kategorie"].unique()
     sysml_code = []
+    
     sysml_code.append("// SysML v2 Requirements Model")
     sysml_code.append("// Automatisch generiert am " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     sysml_code.append("")
@@ -53,6 +67,8 @@ def generate_sysmlv2_code(df, output_path):
     sysml_code.append("// Requirements Definitionen")
     sysml_code.append("// ========================================")
     sysml_code.append("")
+
+    # --- Haupt-Package generieren ---
     for index, row in df.iterrows():
         req_id = sanitize_requirement_id(row["ID"])
         req_name = escape_string(row["Anforderung"])
@@ -63,7 +79,7 @@ def generate_sysmlv2_code(df, output_path):
             revision = ""
         version = escape_string(row["Version"])
         status = escape_string(row["Status"])
-        category = row["Kategorie"]
+        
         sysml_code.append(f"requirement <REQ{req_id}> '{req_name}' {{")
         sysml_code.append("    doc /*")
         sysml_code.append(f"    {req_description}")
@@ -77,52 +93,55 @@ def generate_sysmlv2_code(df, output_path):
         sysml_code.append("    }")
         sysml_code.append("}")
         sysml_code.append("")
+
     sysml_code.append("}")
     sysml_code.append("}")
+
+    # --- Kategorie-Packages generieren ---
     sysml_code.append("")
     sysml_code.append("// ========================================")
     sysml_code.append("// Requirement-Kategorien als Packages")
     sysml_code.append("// ========================================")
     sysml_code.append("")
-    package_names = {}
+
     for category in categories:
-        if category == "-":
+        if category == "-" or pd.isna(category):
             continue
-        if pd.notna(category):
-            package_name = sanitize_package_name(category)
-            package_names[category] = package_name
-            sysml_code.append(f"package '{package_name}' {{")
-            sysml_code.append(f"    view '{package_name}' : DS_Views::SymbolicViews::gv {{")
-            sysml_code.append("")
-            for index, row in df.iterrows():
+            
+        package_name = sanitize_package_name(category)
+        sysml_code.append(f"package '{package_name}' {{")
+        sysml_code.append(f"    view '{package_name}' : DS_Views::SymbolicViews::gv {{")
+        sysml_code.append("")
+
+        for index, row in df.iterrows():
+            category_ = row["Kategorie"]
+            if sanitize_package_name(category_) == package_name:
                 req_id = sanitize_requirement_id(row["ID"])
                 req_name = escape_string(row["Anforderung"])
                 req_description = escape_string(row["Beschreibung"])
-                verantwortlicher = escape_string(row["Verantwortlicher"])
+                verantwortlicher = escape_string(row["Verantwortlicher"]).split("@", 1)[0]
                 revision = escape_string(row["Revision"])
                 if revision.lower() == "entwurf":
                     revision = ""
                 version = escape_string(row["Version"])
                 status = escape_string(row["Status"])
-                category_ = row["Kategorie"]
-                if sanitize_package_name(category_) == package_name:
-                    sysml_code.append(f"requirement <REQ{req_id}> '{req_name}' {{")
-                    sysml_code.append("    doc /*")
-                    sysml_code.append(f"    {req_description}")
-                    sysml_code.append("    */")
-                    sysml_code.append("    ")
-                    sysml_code.append("    metadata RequirementMetadata {")
-                    sysml_code.append(f"        verantwortlicher = \"{verantwortlicher.split('@', 1)[0]}\";")
-                    sysml_code.append(f"        revision = \"{revision}\";")
-                    sysml_code.append(f"        version = \"{version}\";")
-                    sysml_code.append(f"        status = \"{status}\";")
-                    sysml_code.append("    }")
-                    sysml_code.append("}")
-                    sysml_code.append("")
-            sysml_code.append("}")
-            sysml_code.append("}")
-    try:
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(sysml_code))
-    except Exception as e:
-        print(f"Fehler beim Schreiben der Datei: {e}")
+
+                sysml_code.append(f"requirement <REQ{req_id}> '{req_name}' {{")
+                sysml_code.append("    doc /*")
+                sysml_code.append(f"    {req_description}")
+                sysml_code.append("    */")
+                sysml_code.append("    ")
+                sysml_code.append("    metadata RequirementMetadata {")
+                sysml_code.append(f"        verantwortlicher = \"{verantwortlicher}\";")
+                sysml_code.append(f"        revision = \"{revision}\";")
+                sysml_code.append(f"        version = \"{version}\";")
+                sysml_code.append(f"        status = \"{status}\";")
+                sysml_code.append("    }")
+                sysml_code.append("}")
+                sysml_code.append("")
+                
+        sysml_code.append("}")
+        sysml_code.append("}")
+
+    # Gib die Liste als zusammenhängenden String zurück
+    return "\n".join(sysml_code)
