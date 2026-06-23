@@ -1956,12 +1956,10 @@ def export_excel(project_id):
         download_name=filename
     )
 
-
 @bp.route("/project/<int:project_id>/export_sysml", methods=["GET", "POST"])
 @login_required
 def export_sysml(project_id):
     from io import BytesIO
-    import tempfile
     import pandas as pd
     from app.utils.sysml_v2_generator import generate_sysmlv2_code
 
@@ -1998,26 +1996,27 @@ def export_sysml(project_id):
         })
         display_id += 1
 
+    # DataFrame aus den Daten erstellen
     df = pd.DataFrame(requirements_data)
 
-    with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt", delete=False, encoding="utf-8") as tmp_file:
-        tmp_path = tmp_file.name
+    # 1. Generiere den SysML Code als Text-String (erwartet nur noch df als Parameter)
+    sysml_code_string = generate_sysmlv2_code(df)
 
-    generate_sysmlv2_code(df, tmp_path)
-
-    with open(tmp_path, "rb") as tmp_file:
-        output = BytesIO(tmp_file.read())
+    # 2. Wandle den String in Bytes um und lade ihn direkt in den Arbeitsspeicher (BytesIO)
+    output = BytesIO(sysml_code_string.encode("utf-8"))
+    
+    # Optional, aber gute Praxis bei BytesIO: Den "Cursor" wieder an den Anfang setzen
     output.seek(0)
 
     filename = f"requirements_{project.name.replace(' ', '_')}.sysml.txt"
 
+    # 3. Datei direkt aus dem Arbeitsspeicher an den Browser senden
     return send_file(
         output,
         mimetype="text/plain",
         as_attachment=True,
         download_name=filename
     )
-
 # Route to import requirements from Excel
 @bp.route("/project/<int:project_id>/import_excel", methods=['POST'])
 @login_required
