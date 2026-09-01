@@ -311,6 +311,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
         <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
       </button>
+      <a class="btn btn-modern d-flex align-items-center ms-2 gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
+        <i class="bi bi-clipboard2-check" style="color: #198754;"></i>
+        <span style="color: #198754;">Anforderungen bewerten</span>
+      </a>
       <style>
       #check-conflicts-btn:hover {
         background: #ffc107 !important;
@@ -319,6 +323,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       #check-conflicts-btn:hover i,
       #check-conflicts-btn:hover span {
+        color: #fff !important;
+      }
+      a[title="Anforderungen bewerten"]:hover {
+        background: #198754 !important;
+        color: #fff !important;
+        border-color: #198754 !important;
+      }
+      a[title="Anforderungen bewerten"]:hover i,
+      a[title="Anforderungen bewerten"]:hover span {
         color: #fff !important;
       }
       a[title="Kanban Board"]:hover {
@@ -472,6 +485,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 {{ _('Quantifizierbar') }}
               </span>
             </th>
+            {% if weighting_available %}
+            <th class="py-3 text-center weighting-col" style="width: 8%" data-col-key="gewichtung">
+              {{ _('Gewichtung') }}
+            </th>
+            {% endif %}
             <th class="text-end pe-4 py-3" style="width: 8%" data-col-key="actions">{{ _('Aktionen') }}</th>
           </tr>
         </thead>
@@ -576,6 +594,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
               </form>
             </td>
+            {% if weighting_available %}
+            <td class="text-center weighting-col" data-col-key="gewichtung">
+              {% if req.gewichtung_prozent is none %}
+              <span class="badge bg-light text-secondary border">{{ _('Nicht bewertet') }}</span>
+              {% else %}
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ '%.2f'|format(req.gewichtung_prozent) }} %</span>
+              {% endif %}
+            </td>
+            {% endif %}
             
             <td class="actions-cell text-end pe-4" data-col-key="actions">
               <div class="d-flex justify-content-end align-items-center">

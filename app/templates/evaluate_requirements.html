@@ -1,0 +1,269 @@
+{% extends "base.html" %} {% block title %}Anforderungen bewerten{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div
+    class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4"
+  >
+    <div>
+      <h1 class="h3 mb-1">Anforderungen bewerten</h1>
+      <p class="text-muted mb-0">Bewertungsmatrix für : {{ project.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <span id="save-status" class="align-self-center text-muted small"></span>
+      <button
+        type="button"
+        class="btn btn-success"
+        id="save-evaluations-btn"
+        {%
+        if
+        not
+        requirements
+        %}disabled{%
+        endif
+        %}
+      >
+        <i class="bi bi-save me-1"></i> Speichern
+      </button>
+      <a
+        href="{{ url_for('main.manage_project', project_id=project.id) }}"
+        class="btn btn-outline-secondary"
+      >
+        <i class="bi bi-arrow-left me-1"></i> Zurück
+      </a>
+    </div>
+  </div>
+
+  {% if requirements %}
+  <div class="alert alert-light border mb-3">
+    Vergleiche jeweils zwei Anforderungen: <strong>1</strong> bedeutet
+    wichtiger, <strong>0</strong> bedeutet unwichtiger. Die schwarze Diagonale
+    ist gesperrt; die untere Hälfte wird automatisch gespiegelt.
+  </div>
+  <div class="table-responsive border rounded shadow-sm">
+    <table
+      class="table table-bordered align-middle text-center mb-0 matrix-table"
+    >
+      <thead class="table-light">
+        <tr>
+          <th class="requirement-label">Anforderung</th>
+          {% for requirement in requirements %}
+          <th
+            class="matrix-heading"
+            title="{{ requirement.get_latest_version().title }}"
+          >
+            REQ{{ loop.index }}
+          </th>
+          {% endfor %}
+          <th>Summe</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for requirement in requirements %} {% set row_index = loop.index0 %}
+        <tr
+          data-requirement-id="{{ requirement.id }}"
+          data-saved-weight="{{ requirement.gewichtung_prozent if requirement.gewichtung_prozent is not none else '' }}"
+        >
+          <th
+            class="text-start requirement-label"
+            title="{{ requirement.get_latest_version().description }}"
+          >
+            <span class="badge bg-secondary me-1">REQ{{ loop.index }}</span>
+            {{ requirement.get_latest_version().title }}
+          </th>
+          {% for compared_requirement in requirements %} {% set column_index =
+          loop.index0 %} {% if row_index == column_index %}
+          <td class="matrix-cell diagonal">-</td>
+          {% elif row_index < column_index %}
+          <td class="matrix-cell">
+            <select
+              class="form-select form-select-sm comparison-input"
+              aria-label="REQ{{ row_index + 1 }} gegen REQ{{ column_index + 1 }}"
+              data-row="{{ row_index }}"
+              data-column="{{ column_index }}"
+            >
+              <option value="" {% if evaluation_comparisons.get(requirements[row_index].id|string ~ '-' ~ compared_requirement.id|string) is none %}selected{% endif %}>-</option>
+              <option value="0" {% if evaluation_comparisons.get(requirements[row_index].id|string ~ '-' ~ compared_requirement.id|string) == '0' %}selected{% endif %}>0</option>
+              <option value="1" {% if evaluation_comparisons.get(requirements[row_index].id|string ~ '-' ~ compared_requirement.id|string) == '1' %}selected{% endif %}>1</option>
+            </select>
+          </td>
+          {% else %}
+          <td
+            class="matrix-cell mirrored"
+            data-mirror-row="{{ row_index }}"
+            data-mirror-column="{{ column_index }}"
+          >
+            -
+          </td>
+          {% endif %} {% endfor %}
+          <td class="row-sum fw-bold">0</td>
+          <td class="row-percent fw-bold">0.00%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr>
+          <th class="text-end" colspan="{{ requirements|length + 2 }}">
+            Prüfsumme
+          </th>
+          <th id="evaluation-checksum">0.00%</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    Für dieses Projekt sind noch keine Anforderungen vorhanden.
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .matrix-table {
+    min-width: 900px;
+  }
+  .matrix-heading {
+    min-width: 86px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .requirement-label {
+    min-width: 220px;
+    max-width: 280px;
+  }
+  .matrix-cell {
+    min-width: 86px;
+    height: 58px;
+  }
+  .matrix-cell.diagonal {
+    background: #212529;
+    color: #fff;
+    font-weight: 700;
+  }
+  .matrix-cell.mirrored {
+    background: #f1f3f5;
+    color: #495057;
+    font-weight: 700;
+  }
+  .comparison-input {
+    width: 70px;
+    margin: auto;
+    text-align: center;
+  }
+</style>
+
+{% if requirements %}
+<script>
+  (() => {
+    const inputs = [...document.querySelectorAll(".comparison-input")];
+    const rows = [
+      ...document.querySelectorAll("tbody tr[data-requirement-id]"),
+    ];
+    const status = document.getElementById("save-status");
+
+    function updateMatrix() {
+      const values = new Map();
+      inputs.forEach((input) =>
+        values.set(`${input.dataset.row}-${input.dataset.column}`, input.value),
+      );
+      let total = 0;
+      const evaluatedFields = inputs.filter(
+        (input) => input.value !== "",
+      ).length;
+      const totalFields = inputs.length;
+
+      rows.forEach((row, rowIndex) => {
+        let sum = 0;
+        for (let columnIndex = 0; columnIndex < rows.length; columnIndex += 1) {
+          const value =
+            rowIndex < columnIndex
+              ? values.get(`${rowIndex}-${columnIndex}`)
+              : values.get(`${columnIndex}-${rowIndex}`);
+          const score =
+            value === "" || value === undefined
+              ? 0
+              : rowIndex < columnIndex
+                ? Number(value)
+                : 1 - Number(value);
+          if (rowIndex !== columnIndex && value !== "" && value !== undefined) {
+            sum += score;
+          }
+          const mirroredCell = row.querySelector(
+            `[data-mirror-row="${rowIndex}"][data-mirror-column="${columnIndex}"]`,
+          );
+          if (mirroredCell)
+            mirroredCell.textContent =
+              value === undefined || value === "" ? "-" : score;
+        }
+        row.querySelector(".row-sum").textContent = sum;
+        row.dataset.rowSum = sum;
+        total += sum;
+      });
+
+      rows.forEach((row) => {
+        const percent = total ? (Number(row.dataset.rowSum) / total) * 100 : 0;
+        const savedWeight = row.dataset.savedWeight;
+        row.querySelector(".row-percent").textContent =
+          total || !savedWeight
+            ? `${percent.toFixed(2)}%`
+            : `${Number(savedWeight).toFixed(2)}%`;
+      });
+      const checksum = totalFields ? (evaluatedFields / totalFields) * 100 : 0;
+      document.getElementById("evaluation-checksum").textContent =
+        `${checksum.toFixed(2)}%`;
+      status.textContent = "";
+    }
+
+    inputs.forEach((input) => input.addEventListener("change", updateMatrix));
+    updateMatrix();
+
+    document
+      .getElementById("save-evaluations-btn")
+      .addEventListener("click", async () => {
+        const evaluatedComparisonsByRow = rows.map(() => 0);
+        inputs.forEach((input) => {
+          if (input.value !== "") {
+            evaluatedComparisonsByRow[Number(input.dataset.row)] += 1;
+            evaluatedComparisonsByRow[Number(input.dataset.column)] += 1;
+          }
+        });
+        const evaluations = rows.map((row) => ({
+          id: Number(row.dataset.requirementId),
+          weight: evaluatedComparisonsByRow[rows.indexOf(row)]
+            ? Number(row.querySelector(".row-percent").textContent.replace("%", ""))
+            : null,
+        }));
+        const comparisons = {};
+        inputs.forEach((input) => {
+          if (input.value === "") return;
+          const rowId = rows[Number(input.dataset.row)].dataset.requirementId;
+          const columnId = rows[Number(input.dataset.column)].dataset.requirementId;
+          comparisons[`${rowId}-${columnId}`] = input.value;
+        });
+        const button = document.getElementById("save-evaluations-btn");
+        button.disabled = true;
+        status.textContent = "Speichert...";
+        try {
+          const response = await fetch(
+            '{{ url_for("main.save_requirement_evaluations", project_id=project.id) }}',
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ evaluations, comparisons }),
+            },
+          );
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.message || "Speichern fehlgeschlagen.");
+          status.textContent = "Bewertung gespeichert.";
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          button.disabled = false;
+        }
+      });
+  })();
+</script>
+{% endif %} {% endblock %}

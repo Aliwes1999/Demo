@@ -371,13 +371,17 @@ def manage_project(project_id):
     custom_columns = project.get_custom_columns()
     
     selected_version_id = request.args.get("selected_version_id", type=int)
+    weighting_available = bool(req_with_versions) and any(
+        req.gewichtung_prozent is not None for req, _ in req_with_versions
+    )
 
     return render_template(
         "create.html", 
         project=project, 
         req_with_versions=req_with_versions,
         custom_columns=custom_columns,
-        selected_version_id=selected_version_id
+        selected_version_id=selected_version_id,
+        weighting_available=weighting_available,
     )
 
 @bp.route("/deleted_requirements")
@@ -636,7 +640,10 @@ def kanban_view(project_id):
     check_project_access(project)
 
     # Get all active requirements
-    requirements = Requirement.query.filter_by(project_id=project_id, is_deleted=False).all()
+    requirements = [
+        requirement for requirement in Requirement.query.filter_by(project_id=project_id, is_deleted=False).all()
+        if requirement.get_latest_version()
+    ]
     
     # Sort into columns
     kanban_data = {
@@ -2330,6 +2337,75 @@ def detect_conflicts_route(project_id):
             pass
     
     return jsonify({'conflicts': unique_conflicts})
+
+
+@bp.route("/project/<int:project_id>/evaluate_requirements")
+@login_required
+def evaluate_requirements(project_id):
+    project = Project.query.get_or_404(project_id)
+    check_project_access(project)
+
+    requirements = Requirement.query.filter_by(
+        project_id=project_id,
+        is_deleted=False
+    ).all()
+    return render_template(
+        "evaluate_requirements.html",
+        project=project,
+        requirements=[requirement for requirement in requirements if requirement.get_latest_version()],
+        evaluation_comparisons=project.get_evaluation_comparisons(),
+    )
+
+
+@bp.route("/project/<int:project_id>/evaluate_requirements/save", methods=["POST"])
+@login_required
+def save_requirement_evaluations(project_id):
+    project = Project.query.get_or_404(project_id)
+    check_project_access(project)
+
+    payload = request.get_json(silent=True) or {}
+    evaluations = payload.get("evaluations")
+    if not isinstance(evaluations, list):
+        return jsonify({"status": "error", "message": "Ungültige Bewertungsdaten."}), 400
+
+    requirements = [
+        requirement for requirement in Requirement.query.filter_by(project_id=project_id, is_deleted=False).all()
+        if requirement.get_latest_version()
+    ]
+    requirements_by_id = {requirement.id: requirement for requirement in requirements}
+    submitted_ids = {item.get("id") for item in evaluations if isinstance(item, dict)}
+    if len(evaluations) != len(requirements_by_id) or submitted_ids != set(requirements_by_id):
+        return jsonify({"status": "error", "message": "Die Anforderungen haben sich geändert. Bitte neu laden."}), 400
+
+    comparisons = payload.get("comparisons")
+    if not isinstance(comparisons, dict):
+        return jsonify({"status": "error", "message": "Die Vergleichswerte fehlen."}), 400
+
+    expected_comparison_keys = {
+        f"{first.id}-{second.id}"
+        for position, first in enumerate(requirements)
+        for second in requirements[position + 1:]
+    }
+    if not set(comparisons).issubset(expected_comparison_keys) or any(str(value) not in {"0", "1"} for value in comparisons.values()):
+        return jsonify({"status": "error", "message": "Ungültige Vergleichswerte."}), 400
+
+    try:
+        for item in evaluations:
+            requirement_id = int(item["id"])
+            weight = item.get("weight")
+            if weight is None:
+                requirements_by_id[requirement_id].gewichtung_prozent = None
+                continue
+            weight = float(weight)
+            if not 0 <= weight <= 100:
+                raise ValueError
+            requirements_by_id[requirement_id].gewichtung_prozent = round(weight, 2)
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"status": "error", "message": "Ungültige Gewichtung."}), 400
+
+    project.evaluation_comparisons = json.dumps(comparisons)
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 
 @bp.route("/requirement_version/<int:version_id>/generate_tests", methods=['POST'])
