@@ -2716,7 +2716,7 @@ def github_webhook():
     # 2. Den neuen Code von GitHub herunterladen (Git Pull)
     try:
         # WICHTIG: Der genaue Pfad zu deinem Projektordner auf PythonAnywhere
-        repo_dir = 'repo_dir = '/home/RequirementsEngineering/mysite'
+        repo_dir =  '/home/RequirementsEngineering/mysite'
         
         # Zieht die neuesten Änderungen vom 'main' Branch und fängt Fehlertexte ab
         output = subprocess.check_output(
