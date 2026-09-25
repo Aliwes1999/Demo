@@ -2716,7 +2716,7 @@ def github_webhook():
     # 2. Den neuen Code von GitHub herunterladen (Git Pull)
     try:
         # WICHTIG: Der genaue Pfad zu deinem Projektordner auf PythonAnywhere
-        repo_dir = '/home/wesali1999/Webbasiertes-Requirements-Engineering-als-Grundlage-automatischer-Codegenerierung-fuer-SysML-v2'
+        repo_dir = 'repo_dir = '/home/RequirementsEngineering/mysite''
         
         # Zieht die neuesten Änderungen vom 'main' Branch und fängt Fehlertexte ab
         output = subprocess.check_output(
@@ -2726,7 +2726,7 @@ def github_webhook():
         )
         
         # 3. Die App auf PythonAnywhere neu starten
-        wsgi_file = '/var/www/wesali1999_pythonanywhere_com_wsgi.py'
+        wsgi_file = '/var/www/requirementsengineering_pythonanywhere_com_wsgi.py'
         subprocess.call(['touch', wsgi_file])
         
         # Gibt bei Erfolg auch die Terminal-Ausgabe zurück
