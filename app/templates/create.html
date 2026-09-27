@@ -102,6 +102,7 @@ content %}
 </div>
 
 <!-- Conflict Modal (Preserved) -->
+ <!--
 <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -124,6 +125,7 @@ content %}
     </div>
   </div>
 </div>
+-->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -178,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+-->
 <!-- JS Variables -->
 <script>
   window.PROJECT_CUSTOM_COLUMNS = {{ custom_columns|tojson|safe }};
@@ -318,7 +320,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
         <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
       </button>
-      <a class="btn btn-modern d-flex align-items-center ms-2 gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
+      -->
+      <a class="btn btn-modern d-inline-flex align-items-center ms-2 gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
         <i class="bi bi-clipboard2-check" style="color: #198754;"></i>
         <span style="color: #198754;">Anforderungen bewerten</span>
       </a>
