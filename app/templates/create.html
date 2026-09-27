@@ -43,6 +43,7 @@ content %}
         </a>
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <h2 class="fw-bold m-0">{{ _('Projektname') }}: {{ project.name }}</h2>
+          <!--
           <button
             class="btn btn-outline-primary btn-uniform btn-modern d-flex align-items-center share-btn ms-2"
             type="button"
@@ -52,6 +53,7 @@ content %}
           >
             <i class="bi bi-share me-2"></i> <span class="share-btn-text">{{ _('Teilen') }}</span>
           </button>
+          -->
           <style>
           .share-btn:hover, .share-btn:focus {
             background: #0d6efd !important;
@@ -216,9 +218,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-5 text-end d-flex gap-2 justify-content-md-end justify-content-start align-items-center flex-wrap">
                 <!-- Export SysML v2 Code as POST form -->
                 <form id="exportSysmlForm" method="POST" action="{{ url_for('main.export_sysml', project_id=project.id) }}" class="d-inline" data-download-loading="true">
+                 <!--
                   <button id="exportSysmlBtn" type="button" class="btn btn-outline-primary btn-modern px-3 d-flex align-items-center shadow-sm" title="{{ _('SysML v2 Code') }}" style="background: linear-gradient(90deg, #4f8cff 0%, #38c6ff 100%); border: 0; color: #ffffff;">
                     <i class="bi bi-lightning-charge-fill me-2"></i> {{ _('Generiere SysML v2 Code') }}
                   </button>
+                  -->
                 </form>
                 <form id="exportExcelForm" method="POST" action="{{ url_for('main.export_excel', project_id=project.id) }}" class="d-inline" data-download-loading="true">
                   <input type="hidden" id="exportSelectionPayload" name="selection_payload" value="" />
@@ -300,6 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <!-- Main Requirements Table -->
+ <!--
 <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-2">
       <h5 class="mb-0 fw-bold text-secondary">{{ _('Anforderungsliste') }}</h5>
@@ -307,6 +312,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <i class="bi bi-kanban" style="color: #6c757d;"></i>
         <span style="color: #6c757d;">{{ _('Kanban Board') }}</span>
       </a>
+      -->
+      <!--
       <button class="btn btn-modern d-flex align-items-center ms-2 gap-2" id="check-conflicts-btn" title="{{ _('Widersprüche prüfen') }}" style="border: 1.5px solid #ffe066; background: #fffbe6; color: #ffc107; transition: background 0.2s, color 0.2s;">
         <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
         <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
@@ -732,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           </style>
         </div>
-
+        <!--
         <div class="row g-3 justify-content-start mt-3" id="syslm-section">
           <div class="col-12 col-md-7 col-lg-5">
             <div class="card border-0 shadow-sm h-100">
@@ -760,6 +767,8 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
           </div>
+          -->
+          <!--
           <div class="col-12 col-md-12 col-lg-7">
             <div class="card border-0 shadow-sm h-100">
               <div class="card-body p-4">
@@ -777,6 +786,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
           </div>
+          -->
         </div>
       </div>
     <!-- ...existing code... -->

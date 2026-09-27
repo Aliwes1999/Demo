@@ -10,3 +10,5 @@ env/
 .vscode/
 .idea/
 instance/
+.github/
+.AGENTS.md
