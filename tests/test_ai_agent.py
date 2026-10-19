@@ -41,6 +41,26 @@ def test_config_loading():
         print(f"❌ Config loading failed: {e}")
         pytest.fail(str(e))
 
+def test_llm_model_resolution():
+    """Test that only configured model keys can be selected."""
+    try:
+        import config
+
+        key, model = config.resolve_llm_model('kiconnect:openai-gpt-oss-120b')
+        assert key == 'kiconnect:openai-gpt-oss-120b'
+        assert model['model'] == 'openai-gpt-oss-120b'
+        assert model['provider'] == 'kiconnect'
+
+        legacy_key, legacy_model = config.resolve_llm_model('gpt-4o-mini')
+        assert legacy_key == 'openai:gpt-4o-mini'
+        assert legacy_model['provider'] == 'openai'
+
+        with pytest.raises(ValueError):
+            config.resolve_llm_model('unknown:model')
+    except Exception as e:
+        print(f"❌ LLM model resolution test failed: {e}")
+        pytest.fail(str(e))
+
 def test_ai_client_function_signature():
     """Test that generate_requirements has correct signature"""
     try:

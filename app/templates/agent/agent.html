@@ -734,7 +734,9 @@ endblock %} {% block content %}
                 <label class="form-label fw-semibold" for="ai_model">{{ _('Modell') }}</label>
                 <select class="form-select" id="ai_model" name="ai_model">
                   <option value="" selected>{{ _('Bitte auswählen') }}</option>
-                  <option value="gpt-4o-mini">{{ _('GPT-4o Mini (OpenAI)') }}</option>
+                  {% for model in llm_models %}
+                  <option value="{{ model.key }}">{{ model.label }}</option>
+                  {% endfor %}
                 </select>
               </div>
             </div>

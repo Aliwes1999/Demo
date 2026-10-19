@@ -9,7 +9,8 @@ Um Umgebungsvariablen aus der Datei `.env` auch im VS Code-Terminal zu verwenden
 Diese Option findest du in den VS Code Einstellungen (`settings.json`).
 
 # Webbasiertes-Requirements-Engineering-als-Grundlage-automatischer-Codegenerierung-fuer-SysML-v2
- (Requirements Management Tool)
+
+(Requirements Management Tool)
 
 Eine moderne Flask-basierte Webanwendung für das Management von Software-Anforderungen mit KI-Unterstützung.
 
@@ -128,8 +129,18 @@ Die Anwendung ist dann unter `http://127.0.0.1:5000` verfügbar.
 
 - `OPENAI_API_KEY`: Erforderlich für KI-Funktionen
 - `OPENAI_MODEL`: KI-Modell (Standard: gpt-4o-mini)
+- `KICONNECT_API_KEY`: API-Schlüssel für KI:connect
+- `KICONNECT_BASE_URL`: KI:connect API-Basis-URL (Standard: https://chat.kiconnect.nrw/api/v1)
 - `SYSTEM_PROMPT_PATH`: Pfad zu benutzerdefiniertem System-Prompt
 - `SYSTEM_PROMPT`: Inline System-Prompt
+
+Die auswählbaren KI:connect-Modelle werden serverseitig verwaltet. Aktuell sind
+`mistralai-mistral-small-4-119b-2603`, `qwen-qwen3-8-27b`,
+`openai-gpt-oss-120b`, `gpt-5.5-2026-04-24`, `gpt-5.4-mini-2026-03-17`,
+`gpt-5.4-nano-2026-03-17`, `gpt-5.3-codex-2026-02-24` und
+`gpt-5.2-2025-12-11` freigegeben.
+API-Schlüssel gehören ausschließlich in die lokale `.env`-Datei oder in die
+Umgebungsvariablen der Deployment-Umgebung und dürfen nicht committed werden.
 
 ### Datenbank
 

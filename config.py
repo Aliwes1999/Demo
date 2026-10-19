@@ -3,6 +3,98 @@ import os
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+KICONNECT_API_KEY = os.getenv('KICONNECT_API_KEY')
+KICONNECT_BASE_URL = os.getenv('KICONNECT_BASE_URL', 'https://chat.kiconnect.nrw/api/v1')
+
+LLM_MODELS = {
+    'openai:gpt-4o-mini': {
+        'provider': 'openai',
+        'model': 'gpt-4o-mini',
+        'label': 'GPT-4o Mini (OpenAI)',
+        'max_output_tokens': 8000,
+        'supports_temperature': True,
+    },
+    'kiconnect:mistralai-mistral-small-4-119b-2603': {
+        'provider': 'kiconnect',
+        'model': 'mistralai-mistral-small-4-119b-2603',
+        'label': 'Mistral Small 4 119B',
+        'max_output_tokens': 64000,
+        'supports_temperature': True,
+    },
+    'kiconnect:qwen-qwen3-8-27b': {
+        'provider': 'kiconnect',
+        'model': 'qwen-qwen3-8-27b',
+        'label': 'Qwen3.8 27B',
+        'max_output_tokens': 131100,
+        'supports_temperature': True,
+    },
+    'kiconnect:openai-gpt-oss-120b': {
+        'provider': 'kiconnect',
+        'model': 'openai-gpt-oss-120b',
+        'label': 'GPT OSS 120B',
+        'max_output_tokens': 8200,
+        'supports_temperature': False,
+    },
+    'kiconnect:gpt-5.5-2026-04-24': {
+        'provider': 'kiconnect',
+        'model': 'gpt-5.5-2026-04-24',
+        'label': 'GPT 5.5',
+        'max_output_tokens': 128000,
+        'supports_temperature': False,
+    },
+    'kiconnect:gpt-5.4-mini-2026-03-17': {
+        'provider': 'kiconnect',
+        'model': 'gpt-5.4-mini-2026-03-17',
+        'label': 'GPT 5.4 Mini',
+        'max_output_tokens': 128000,
+        'supports_temperature': False,
+    },
+    'kiconnect:gpt-5.4-nano-2026-03-17': {
+        'provider': 'kiconnect',
+        'model': 'gpt-5.4-nano-2026-03-17',
+        'label': 'GPT 5.4 Nano',
+        'max_output_tokens': 128000,
+        'supports_temperature': False,
+    },
+    'kiconnect:gpt-5.3-codex-2026-02-24': {
+        'provider': 'kiconnect',
+        'model': 'gpt-5.3-codex-2026-02-24',
+        'label': 'GPT 5.3 Codex',
+        'max_output_tokens': 128000,
+        'supports_temperature': False,
+    },
+    'kiconnect:gpt-5.2-2025-12-11': {
+        'provider': 'kiconnect',
+        'model': 'gpt-5.2-2025-12-11',
+        'label': 'GPT 5.2',
+        'max_output_tokens': 128000,
+        'supports_temperature': False,
+    },
+}
+
+
+def get_available_llm_models():
+    """Return the server-approved models for UI rendering."""
+    return [
+        {'key': key, **model_config}
+        for key, model_config in LLM_MODELS.items()
+    ]
+
+
+def resolve_llm_model(model_key):
+    """Resolve a server-approved model key, including legacy raw model names."""
+    if not model_key:
+        model_key = f'openai:{OPENAI_MODEL or "gpt-4o-mini"}'
+
+    if model_key in LLM_MODELS:
+        return model_key, LLM_MODELS[model_key]
+
+    for key, model_config in LLM_MODELS.items():
+        if model_config['model'] == model_key:
+            return key, model_config
+
+    raise ValueError(f'Nicht unterstütztes LLM-Modell: {model_key}')
+
 SYSTEM_PROMPT_PATH = os.getenv('SYSTEM_PROMPT_PATH')
 SYSTEM_PROMPT = os.getenv('SYSTEM_PROMPT')
 

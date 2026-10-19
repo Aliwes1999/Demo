@@ -9,6 +9,29 @@ from openai import OpenAI
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import config
 
+
+def _create_llm_client(model_key: str | None = None):
+    """Create the configured provider client for an approved model."""
+    resolved_key, model_config = config.resolve_llm_model(model_key)
+    provider = model_config['provider']
+
+    if provider == 'openai':
+        api_key = config.OPENAI_API_KEY
+        client_kwargs = {'api_key': api_key}
+    elif provider == 'kiconnect':
+        api_key = config.KICONNECT_API_KEY
+        client_kwargs = {
+            'api_key': api_key,
+            'base_url': config.KICONNECT_BASE_URL,
+        }
+    else:
+        raise ValueError(f'Unbekannter LLM-Provider: {provider}')
+
+    if not api_key:
+        raise ValueError(f'API-Schlüssel für Provider {provider} ist nicht gesetzt.')
+
+    return OpenAI(**client_kwargs), model_config['model'], model_config, resolved_key
+
 def generate_requirements(user_description: str | None, inputs: dict, columns: list = None, ai_model: str = None, num_requirements: int = None, num_requirements_mode: str | None = None, num_requirements_value: int | None = None, product_system: str = None, has_excel_context: bool = False, has_pdf_context: bool = False, improve_only: bool = False, extend_existing: bool = False, output_language: str | None = None) -> list[dict]:
     """
     Calls OpenAI API to generate requirements based on user description and inputs.
@@ -32,8 +55,7 @@ def generate_requirements(user_description: str | None, inputs: dict, columns: l
         RuntimeError: If OpenAI API call fails or response is invalid.
     """
     # Get configuration
-    api_key = config.OPENAI_API_KEY
-    model = ai_model or config.OPENAI_MODEL or "gpt-4o-mini"
+    client, model, model_config, _ = _create_llm_client(ai_model)
     system_prompt = config.get_system_prompt(
         columns,
     num_requirements,
@@ -48,12 +70,6 @@ def generate_requirements(user_description: str | None, inputs: dict, columns: l
     )
 
     # ... rest of the function stays the same
-
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable must be set.")
-
-    # Initialize OpenAI client
-    client = OpenAI(api_key=api_key)
 
     # Build user message from user_description and inputs
     user_message_parts = []
@@ -147,19 +163,43 @@ Antworte NUR mit diesem JSON, ohne zusätzlichen Text davor oder danach."""
     try:
         # Call OpenAI Chat Completions API
         max_output_tokens = 8000
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
+        if model_config['provider'] == 'kiconnect':
+            messages = [
+                {"role": "system", "content": f"{system_prompt}\n\n{developer_message}"},
+                {"role": "user", "content": user_message}
+            ]
+        else:
+            messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "developer", "content": developer_message},
                 {"role": "user", "content": user_message}
-            ],
-            temperature=0.2,
-            max_tokens=max_output_tokens
-        )
+            ]
+        token_limit = min(max_output_tokens, model_config['max_output_tokens'])
+        if model == 'gpt-5.3-codex-2026-02-24':
+            response = client.responses.create(
+                model=model,
+                input=messages,
+                max_output_tokens=token_limit,
+            )
+            response_text = (response.output_text or '').strip()
+        else:
+            request_kwargs = {
+                'model': model,
+                'messages': messages,
+            }
+            if model.startswith('gpt-5'):
+                request_kwargs['max_completion_tokens'] = token_limit
+            else:
+                request_kwargs['max_tokens'] = token_limit
+            if model_config['supports_temperature']:
+                request_kwargs['temperature'] = 0.2
 
-        # Extract response content
-        response_text = response.choices[0].message.content.strip()
+            response = client.chat.completions.create(
+                **request_kwargs
+            )
+
+            # Extract response content
+            response_text = response.choices[0].message.content.strip()
 
         # Parse JSON response
         requirements = _parse_json_response(
