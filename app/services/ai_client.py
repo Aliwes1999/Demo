@@ -69,6 +69,16 @@ def generate_requirements(user_description: str | None, inputs: dict, columns: l
         num_requirements_value
     )
 
+    if model_config.get('prompt_style') == 'strict_title_json':
+        system_prompt += '''
+
+MISTRAL-AUSGABEVERTRAG:
+- Verwende exakt die JSON-Schlüssel "title", "description", "category", "status", "is_quantifiable" und "is_functional".
+- Verwende niemals "name", "titel" oder "requirement_name".
+- "title" ist ausschließlich ein kurzer, präziser Name der Anforderung, kein vollständiger Satz und keine Erklärung.
+- Die vollständige, testbare Anforderung steht ausschließlich in "description".
+- Antworte ausschließlich mit einem JSON-Objekt im geforderten Format.'''
+
     # ... rest of the function stays the same
 
     # Build user message from user_description and inputs
@@ -93,87 +103,13 @@ def generate_requirements(user_description: str | None, inputs: dict, columns: l
     else:
         user_message = "\n".join(user_message_parts)
 
-    # Build developer message with dynamic JSON schema
-    if columns and isinstance(columns, list):
-        # Build JSON structure based on columns
-        json_fields = []
-        for col in columns:
-            col_lower = col.lower()
-            if col_lower in ['titel', 'title']:
-                json_fields.append(f'      "{col}": "Kurzer, prägnanter Titel"')
-            elif col_lower in ['beschreibung', 'description']:
-                json_fields.append(f'      "{col}": "Detaillierte Beschreibung der Anforderung mit Akzeptanzkriterien"')
-            elif col_lower in ['kategorie', 'category']:
-                json_fields.append(
-                    f'      "{col}": "Kategorie (z.B. nach der Hauptmerkmalliste nach Pahl/Beitz (hauptäschlich für Maschinen- und Anlagenbauprodukte): Geometrie, Kinematik, Kräfte, Energie, Stoff, Signal, Sicherheit, Ergonomie, Fertigung, Kontrolle, Montage, Transport, Gebrauch, Instandhaltung, Recycling, Kosten), Randbedingungen etc., vor allem für mechatronische Syteme weitere Kategorien möglich.)"'
-                )
-            elif col_lower in ['status']:
-                json_fields.append(f'      "{col}": "Entwurf"')
-            else:
-                json_fields.append(f'      "{col}": "Passender Wert für {col}"')
-        
-        # Add is_quantifiable and is_functional fields
-        json_fields.append('      "is_quantifiable": true oder false')
-        json_fields.append('      "is_functional": true oder false')
-        
-        json_example = "{\n" + ",\n".join(json_fields) + "\n    }"
-        
-        developer_message = f"""Du musst ausschließlich mit gültigem JSON antworten.
-Das JSON-Format muss exakt dieser Struktur folgen:
-{{
-  "requirements": [
-    {json_example}
-  ]
-}}
-
-Wichtig: 
-- Fülle ALLE Spalten ({', '.join(columns)}) mit sinnvollen Werten.
-- Setze "is_quantifiable" auf true, wenn die Anforderung quantitativ messbar ist (z.B. Performance-Werte, Zeitlimits, Durchsatz, Speicherverbrauch, etc.).
-- Setze "is_quantifiable" auf false für qualitative Anforderungen (z.B. Benutzerfreundlichkeit, Design, etc.).
-- Setze "is_functional" auf true, wenn die Anforderung explizit eine Funktion des zu entwickelnden Produkts oder Systems beschreibt.
-- Setze "is_functional" auf false, wenn es sich um eine nicht-funktionale Anforderung handelt.
-Erzeuge nicht nur 10 Anforderungen, sondern so viele wie möglich und sinnvoll, um den Kontext bestmöglich auszunutzen.
-Antworte NUR mit diesem JSON, ohne zusätzlichen Text davor oder danach."""
-    else:
-        # Fallback to default structure
-        developer_message = """Du musst ausschließlich mit gültigem JSON antworten.
-Das JSON-Format muss exakt dieser Struktur folgen:
-{
-  "requirements": [
-    {
-      "title": "Kurzer, prägnanter Titel",
-      "description": "Detaillierte Beschreibung mit Akzeptanzkriterien",
-            "category": "Kategorie (z.B. nach der Hauptmerkmalliste nach Pahl/Beitz (hauptäschlich für Maschinen- und Anlagenbauprodukte): Geometrie, Kinematik, Kräfte, Energie, Stoff, Signal, Sicherheit, Ergonomie, Fertigung, Kontrolle, Montage, Transport, Gebrauch, Instandhaltung, Recycling, Kosten), Randbedingungen etc., vor allem für mechatronische Syteme weitere Kategorien möglich.)",
-            "status": "Entwurf",
-            "is_quantifiable": true oder false,
-            "is_functional": true oder false
-    }
-  ]
-}
-
-Wichtig: 
-- Setze "is_quantifiable" auf true, wenn die Anforderung quantitativ messbar ist (z.B. Performance-Werte, Zeitlimits, Durchsatz, etc.).
-- Setze "is_quantifiable" auf false für qualitative Anforderungen (z.B. Benutzerfreundlichkeit, Design, etc.).
-- Setze "is_functional" auf true, wenn die Anforderung explizit eine Funktion des zu entwickelnden Produkts oder Systems beschreibt.
-- Setze "is_functional" auf false, wenn es sich um eine nicht-funktionale Anforderung handelt.
-Erzeuge nicht nur 10 Anforderungen, sondern so viele wie möglich und sinnvoll, um den Kontext bestmöglich auszunutzen.
-
-Antworte NUR mit diesem JSON, ohne zusätzlichen Text davor oder danach."""
-
     try:
         # Call OpenAI Chat Completions API
         max_output_tokens = 8000
-        if model_config['provider'] == 'kiconnect':
-            messages = [
-                {"role": "system", "content": f"{system_prompt}\n\n{developer_message}"},
-                {"role": "user", "content": user_message}
-            ]
-        else:
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "developer", "content": developer_message},
-                {"role": "user", "content": user_message}
-            ]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
         token_limit = min(max_output_tokens, model_config['max_output_tokens'])
         if model == 'gpt-5.3-codex-2026-02-24':
             response = client.responses.create(

@@ -41,6 +41,16 @@ def test_config_loading():
         print(f"❌ Config loading failed: {e}")
         pytest.fail(str(e))
 
+def test_config_prompt_with_columns_keeps_default_rules():
+    """Test that dynamic columns do not discard the domain-specific base prompt."""
+    import config
+
+    prompt = config.get_system_prompt(columns=['title', 'description'])
+
+    assert "hochwertige Anforderungsformulierung" in prompt
+    assert "Das Projekt verwendet folgende Spalten" in prompt
+    assert "requirements" in prompt
+
 def test_llm_model_resolution():
     """Test that only configured model keys can be selected."""
     try:
@@ -60,6 +70,21 @@ def test_llm_model_resolution():
     except Exception as e:
         print(f"❌ LLM model resolution test failed: {e}")
         pytest.fail(str(e))
+
+def test_only_mistral_uses_strict_title_json_prompt_style():
+    """Test that the Mistral prompt correction is model-specific."""
+    import config
+
+    models = config.get_available_llm_models()
+    prompt_style_models = {
+        model['model']: model.get('prompt_style')
+        for model in models
+        if model.get('prompt_style') is not None
+    }
+
+    assert prompt_style_models == {
+        'mistralai-mistral-small-4-119b-2603': 'strict_title_json'
+    }
 
 def test_ai_client_function_signature():
     """Test that generate_requirements has correct signature"""
