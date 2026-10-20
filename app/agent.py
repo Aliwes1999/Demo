@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from . import db
 from .models import Project, Requirement, RequirementVersion, version_label
 from .services.ai_client import generate_requirements
+import config
 
 agent_bp = Blueprint('agent', __name__, template_folder='templates/agent')
 output_language = None
@@ -73,7 +74,11 @@ def agent_page(project_id):
     """
     project = Project.query.get_or_404(project_id)
     check_project_access(project)
-    return render_template('agent.html', project=project)
+    return render_template(
+        'agent.html',
+        project=project,
+        llm_models=config.get_available_llm_models(),
+    )
 
 
 @agent_bp.route('/agent/generate/<int:project_id>', methods=['POST'])
