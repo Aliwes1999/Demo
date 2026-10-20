@@ -90,19 +90,13 @@ content %}
         <!-- Tools directly accessible -->
         <!--a href="{{ url_for('main.kanban_view', project_id=project.id) }}" class="btn btn-white border shadow-sm text-secondary" title="Kanban Board">
             <i class="bi bi-kanban"></i> 
-        </a>
-        <button class="btn btn-white border shadow-sm text-warning" id="check-conflicts-btn" title="{{ _('Widersprüche prüfen') }}">
-            <i class="bi bi-exclamation-triangle"></i>
-        </button>
-         Projekt teilen Button wurde nach oben verschoben -->
-
-        
+        </a>-->
         <!-- Data Menu Removed - moved to toolbar -->
     </div>
 </div>
 
 <!-- Conflict Modal (Preserved) -->
- <!--
+ 
 <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -125,7 +119,7 @@ content %}
     </div>
   </div>
 </div>
--->
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -315,16 +309,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <span style="color: #6c757d;">{{ _('Kanban Board') }}</span>
       </a>
       -->
-      <!--
-      <button class="btn btn-modern d-flex align-items-center ms-2 gap-2" id="check-conflicts-btn" title="{{ _('Widersprüche prüfen') }}" style="border: 1.5px solid #ffe066; background: #fffbe6; color: #ffc107; transition: background 0.2s, color 0.2s;">
-        <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
-        <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
-      </button>
-      -->
-      <a class="btn btn-modern d-inline-flex align-items-center ms-2 gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
-        <i class="bi bi-clipboard2-check" style="color: #198754;"></i>
-        <span style="color: #198754;">Anforderungen bewerten</span>
-      </a>
       <style>
       #check-conflicts-btn:hover {
         background: #ffc107 !important;
@@ -355,7 +339,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       </style>
     </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
+    <div id="requirement-actions" class="d-flex align-items-center gap-2 flex-wrap justify-content-start w-100">
+      <button class="btn btn-modern d-flex align-items-center gap-2" id="check-conflicts-btn" title="{{ _('Widersprüche prüfen') }}" style="border: 1.5px solid #ffe066; background: #fffbe6; color: #ffc107; transition: background 0.2s, color 0.2s;">
+        <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
+        <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
+      </button>
+      <a class="btn btn-modern d-inline-flex align-items-center gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
+        <i class="bi bi-clipboard2-check" style="color: #198754;"></i>
+        <span style="color: #198754;">Anforderungen bewerten</span>
+      </a>
       <button id="scrollToManualBtn" class="btn btn-sm btn-modern d-flex align-items-center shadow-sm fw-bold text-white border-0" type="button" style="background: linear-gradient(90deg, #6c757d 0%, #adb5bd 100%); border-radius: 1.3rem; letter-spacing: 0.3px; font-size: 0.78rem; padding: 0.25rem 0.7rem; transition: transform 0.15s; min-width: 170px; justify-content: center;">
         <span class="me-2 d-flex align-items-center">
           <i class="bi bi-plus-circle-fill" style="font-size: 0.9rem; animation: pulseAdd 1.2s infinite alternate;"></i>

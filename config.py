@@ -20,6 +20,7 @@ LLM_MODELS = {
         'label': 'Mistral Small 4 119B',
         'max_output_tokens': 64000,
         'supports_temperature': True,
+        'prompt_style': 'strict_title_json',
     },
     'kiconnect:qwen-qwen3-8-27b': {
         'provider': 'kiconnect',
@@ -137,7 +138,13 @@ gibt es weitere Normen, die berücksichtigt werden können, die zur Verbesserung
 -	Da die Anforderungen im nächsten Schritt im MBSE-Kontext in SysML v2 konforme Anforderungen überführt werden sollen, kannst du dich vor allem auch schon an folgende Guidelines und Handbücher orientieren (von der INCOSE): INCOSE Guide to Writing Requirements, INCOSE Systems Engineering Handbook, INCOSE Needs and Requirements Manual. Die hier final erstellte Anforderungsliste dient dabei eben als Grundlage zur Abbildung von Anforderungen in einem SysML v2 konformen Systemmodell.
 Erzeuge nicht nur 10 Anforderungen, sondern so viele wie möglich und sinnvoll, um den Kontext bestmöglich auszunutzen.
 """
-    base_prompt = DEFAULT_SYSTEM_PROMPT
+    if SYSTEM_PROMPT_PATH and os.path.exists(SYSTEM_PROMPT_PATH):
+        with open(SYSTEM_PROMPT_PATH, 'r', encoding='utf-8') as f:
+            base_prompt = f.read().strip()
+    elif SYSTEM_PROMPT:
+        base_prompt = SYSTEM_PROMPT
+    else:
+        base_prompt = DEFAULT_SYSTEM_PROMPT
 
     # Set up all variables for prompt construction
     json_fields = []
@@ -272,12 +279,13 @@ RESTRIKTIONEN:
     # Compose the prompt if columns are provided
     if columns and isinstance(columns, list):
         json_structure = ',\n        '.join(json_fields)
-        custom_prompt = f"""
+        custom_prompt = f"""{base_prompt}
+
 Du bist ein erfahrener Requirements Engineer.
 Erzeuge klare, präzise Anforderungen im JSON-Format.
 Das Projekt verwendet folgende Spalten: {', '.join(columns)}
 
-Antworte ausschließlich mit gültigem JSON in folgender Struktur:
+    VERBINDLICHE AUSGABEFORM: Antworte ausschließlich mit gültigem JSON in folgender Struktur:
 {{
     "requirements": [
         {json_structure}
@@ -292,34 +300,5 @@ Regeln:
 - WICHTIG: Antworte NUR und AUSSCHLIESSLICH mit dem JSON-Objekt. Kein einleitender Text, keine Erklärungen.{count_instruction}{product_context}{language_instruction}{excel_instruction}{pdf_instruction}{improve_instruction}{extend_instruction}
 """
         return custom_prompt
-
-    # Fallback: use base prompt
-    if SYSTEM_PROMPT_PATH and os.path.exists(SYSTEM_PROMPT_PATH):
-        with open(SYSTEM_PROMPT_PATH, 'r', encoding='utf-8') as f:
-            base_prompt = f.read().strip()
-    elif SYSTEM_PROMPT:
-        base_prompt = SYSTEM_PROMPT
-    else:
-        base_prompt = DEFAULT_SYSTEM_PROMPT
-
-    # If columns are provided, customize the prompt
-    if columns and isinstance(columns, list):
-        json_fields = []
-        for col in columns:
-            col_lower = col.lower()
-            if col_lower in ['titel', 'title']:
-                json_fields.append(f'"{col}": "Kurzer, prägnanter Titel"')
-            elif col_lower in ['beschreibung', 'description']:
-                json_fields.append(f'"{col}": "Detaillierte Beschreibung mit Akzeptanzkriterien"')
-            elif col_lower in ['kategorie', 'category']:
-                json_fields.append(
-                    f'"{col}": "Kategorie (z.B. nach der Hauptmerkmalliste nach Pahl/Beitz (hauptäschlich für Maschinen- und Anlagenbauprodukte): Geometrie, Kinematik, Kräfte, Energie, Stoff, Signal, Sicherheit, Ergonomie, Fertigung, Kontrolle, Montage, Transport, Gebrauch, Instandhaltung, Recycling, Kosten), Randbedingungen etc., vor allem für mechatronische Systeme weitere Kategorien möglich.)"'
-                )
-            elif col_lower in ['status']:
-                json_fields.append(f'"{col}": "Entwurf"')
-            elif col_lower in ['id']:
-                json_fields.append(f'"{col}": "ID der ursprünglichen Anforderung (Zwingend beibehalten)"')
-            else:
-                json_fields.append(f'"{col}": ""')
 
     return base_prompt
