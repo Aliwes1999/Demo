@@ -36,41 +36,6 @@ LLM_MODELS = {
         'max_output_tokens': 8200,
         'supports_temperature': False,
     },
-    'kiconnect:gpt-5.5-2026-04-24': {
-        'provider': 'kiconnect',
-        'model': 'gpt-5.5-2026-04-24',
-        'label': 'GPT 5.5',
-        'max_output_tokens': 128000,
-        'supports_temperature': False,
-    },
-    'kiconnect:gpt-5.4-mini-2026-03-17': {
-        'provider': 'kiconnect',
-        'model': 'gpt-5.4-mini-2026-03-17',
-        'label': 'GPT 5.4 Mini',
-        'max_output_tokens': 128000,
-        'supports_temperature': False,
-    },
-    'kiconnect:gpt-5.4-nano-2026-03-17': {
-        'provider': 'kiconnect',
-        'model': 'gpt-5.4-nano-2026-03-17',
-        'label': 'GPT 5.4 Nano',
-        'max_output_tokens': 128000,
-        'supports_temperature': False,
-    },
-    'kiconnect:gpt-5.3-codex-2026-02-24': {
-        'provider': 'kiconnect',
-        'model': 'gpt-5.3-codex-2026-02-24',
-        'label': 'GPT 5.3 Codex',
-        'max_output_tokens': 128000,
-        'supports_temperature': False,
-    },
-    'kiconnect:gpt-5.2-2025-12-11': {
-        'provider': 'kiconnect',
-        'model': 'gpt-5.2-2025-12-11',
-        'label': 'GPT 5.2',
-        'max_output_tokens': 128000,
-        'supports_temperature': False,
-    },
 }
 
 

@@ -111,31 +111,23 @@ MISTRAL-AUSGABEVERTRAG:
             {"role": "user", "content": user_message}
         ]
         token_limit = min(max_output_tokens, model_config['max_output_tokens'])
-        if model == 'gpt-5.3-codex-2026-02-24':
-            response = client.responses.create(
-                model=model,
-                input=messages,
-                max_output_tokens=token_limit,
-            )
-            response_text = (response.output_text or '').strip()
+        request_kwargs = {
+            'model': model,
+            'messages': messages,
+        }
+        if model.startswith('gpt-5'):
+            request_kwargs['max_completion_tokens'] = token_limit
         else:
-            request_kwargs = {
-                'model': model,
-                'messages': messages,
-            }
-            if model.startswith('gpt-5'):
-                request_kwargs['max_completion_tokens'] = token_limit
-            else:
-                request_kwargs['max_tokens'] = token_limit
-            if model_config['supports_temperature']:
-                request_kwargs['temperature'] = 0.2
+            request_kwargs['max_tokens'] = token_limit
+        if model_config['supports_temperature']:
+            request_kwargs['temperature'] = 0.2
 
-            response = client.chat.completions.create(
-                **request_kwargs
-            )
+        response = client.chat.completions.create(
+            **request_kwargs
+        )
 
-            # Extract response content
-            response_text = response.choices[0].message.content.strip()
+        # Extract response content
+        response_text = response.choices[0].message.content.strip()
 
         # Parse JSON response
         requirements = _parse_json_response(

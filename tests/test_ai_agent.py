@@ -71,6 +71,21 @@ def test_llm_model_resolution():
         print(f"❌ LLM model resolution test failed: {e}")
         pytest.fail(str(e))
 
+def test_llm_model_registry_contains_only_approved_models():
+    """Test that the LLM registry contains exactly the approved models."""
+    import config
+
+    assert set(config.LLM_MODELS) == {
+        'openai:gpt-4o-mini',
+        'kiconnect:mistralai-mistral-small-4-119b-2603',
+        'kiconnect:qwen-qwen3-8-27b',
+        'kiconnect:openai-gpt-oss-120b',
+    }
+    assert all(
+        not model['model'].startswith('gpt-5') and 'codex' not in model['model']
+        for model in config.LLM_MODELS.values()
+    )
+
 def test_only_mistral_uses_strict_title_json_prompt_style():
     """Test that the Mistral prompt correction is model-specific."""
     import config

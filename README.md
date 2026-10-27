@@ -136,9 +136,7 @@ Die Anwendung ist dann unter `http://127.0.0.1:5000` verfügbar.
 
 Die auswählbaren KI:connect-Modelle werden serverseitig verwaltet. Aktuell sind
 `mistralai-mistral-small-4-119b-2603`, `qwen-qwen3-8-27b`,
-`openai-gpt-oss-120b`, `gpt-5.5-2026-04-24`, `gpt-5.4-mini-2026-03-17`,
-`gpt-5.4-nano-2026-03-17`, `gpt-5.3-codex-2026-02-24` und
-`gpt-5.2-2025-12-11` freigegeben.
+und `openai-gpt-oss-120b` freigegeben.
 API-Schlüssel gehören ausschließlich in die lokale `.env`-Datei oder in die
 Umgebungsvariablen der Deployment-Umgebung und dürfen nicht committed werden.
 
