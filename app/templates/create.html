@@ -95,6 +95,31 @@ content %}
     </div>
 </div>
 
+<div id="chatbot-widget" class="position-fixed bottom-0 end-0 m-3" data-project-id="{{ project.id }}" style="z-index: 1050;">
+  <button id="chatbot-toggle" type="button" class="btn btn-primary rounded-circle shadow" aria-label="Chat öffnen" title="Chat öffnen" style="width: 52px; height: 52px;">
+    <i class="bi bi-chat-dots fs-5"></i>
+  </button>
+  <section id="chatbot-window" class="card shadow-lg d-none" aria-label="Anforderungs-Chat" style="width: 380px; height: 500px; max-width: calc(100vw - 2rem); max-height: calc(100vh - 5rem);">
+    <header class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+      <strong>chatbot: Anforderungsanalyse-Synthese</strong>
+      <button id="chatbot-close" type="button" class="btn btn-sm btn-link text-white p-0" aria-label="Chat schließen" title="Chat schließen">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+    <div id="chatbot-messages" class="card-body overflow-auto d-flex flex-column gap-2" aria-live="polite">
+      <div class="align-self-start bg-light rounded p-2 small">Stelle eine Frage zu den Projektanforderungen.</div>
+    </div>
+    <form id="chatbot-form" class="card-footer">
+      <div class="input-group">
+        <textarea id="chatbot-input" class="form-control" rows="2" placeholder="Frage stellen..." aria-label="Frage zu den Projektanforderungen"></textarea>
+        <button id="chatbot-submit" type="submit" class="btn btn-primary" aria-label="Frage senden" title="Frage senden">
+          <i class="bi bi-send"></i>
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
 <!-- Conflict Modal (Preserved) -->
  
 <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true">
@@ -763,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
           </div>
           -->
-          <!--
+          
           <div class="col-12 col-md-12 col-lg-7">
             <div class="card border-0 shadow-sm h-100">
               <div class="card-body p-4">
@@ -781,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
           </div>
-          -->
+          
         </div>
       </div>
     <!-- ...existing code... -->

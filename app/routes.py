@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import json
 from . import db
 from .models import Project, Requirement, RequirementVersion, RequirementComment, Notification, User
-from .services.ai_client import generate_requirements, generate_specification_document
+from .services.ai_client import answer_requirement_question, generate_requirements, generate_specification_document
 import subprocess
 import hmac
 import hashlib
@@ -383,6 +383,53 @@ def manage_project(project_id):
         selected_version_id=selected_version_id,
         weighting_available=weighting_available,
     )
+
+
+@bp.route('/project/<int:project_id>/chat', methods=['POST'])
+@login_required
+def project_chat(project_id):
+    project = Project.query.get_or_404(project_id)
+    check_project_access(project)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        question = data.get('question')
+        if not isinstance(question, str) or not question.strip():
+            return jsonify({'error': 'Bitte gib eine Frage ein.'}), 400
+
+        model_key = data.get('model_key')
+        if model_key is not None and not isinstance(model_key, str):
+            model_key = None
+        rag_context = data.get('rag_context')
+        requirements = Requirement.query.filter_by(
+            project_id=project_id,
+            is_deleted=False,
+        ).all()
+        project_requirements = []
+        for requirement in requirements:
+            latest = requirement.get_latest_version()
+            if latest:
+                project_requirements.append({
+                    'id': requirement.id,
+                    'title': latest.title,
+                    'category': latest.category,
+                    'description': latest.description,
+                })
+
+        answer = answer_requirement_question(
+            project_requirements,
+            question.strip(),
+            model_key=model_key.strip() or None if model_key else None,
+            rag_context=rag_context,
+        )
+        return jsonify({'response': answer})
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({'error': str(exc)}), 502
+    except Exception:
+        current_app.logger.exception('Unexpected error in project chat')
+        return jsonify({'error': 'Der Chat konnte nicht verarbeitet werden.'}), 500
 
 @bp.route("/deleted_requirements")
 @login_required

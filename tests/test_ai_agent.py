@@ -119,6 +119,14 @@ def test_ai_client_function_signature():
         print(f"❌ Function signature test failed: {e}")
         pytest.fail(str(e))
 
+def test_requirement_chat_function_signature():
+    """Test that the requirement chat service is importable without an API call."""
+    from app.services.ai_client import answer_requirement_question
+    import inspect
+
+    params = list(inspect.signature(answer_requirement_question).parameters)
+    assert params == ['project_requirements', 'user_question', 'model_key', 'rag_context']
+
 def test_json_parsing_functions():
     """Test JSON parsing helper functions"""
     try:

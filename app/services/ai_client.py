@@ -32,6 +32,59 @@ def _create_llm_client(model_key: str | None = None):
 
     return OpenAI(**client_kwargs), model_config['model'], model_config, resolved_key
 
+
+def answer_requirement_question(
+    project_requirements: list[dict],
+    user_question: str,
+    model_key: str | None = None,
+    rag_context: str | None = None,
+) -> str:
+    """Answer a question using only the supplied project requirements."""
+    if not user_question or not user_question.strip():
+        raise ValueError("Die Frage darf nicht leer sein.")
+
+    requirement_context = []
+    for requirement in project_requirements or []:
+        requirement_context.append(
+            "- ID: {id}\n  Titel: {title}\n  Kategorie: {category}\n  Beschreibung: {description}".format(
+                id=requirement.get('id', ''),
+                title=requirement.get('title', ''),
+                category=requirement.get('category', ''),
+                description=requirement.get('description', ''),
+            )
+        )
+    formatted_requirements = "\n".join(requirement_context) or "Keine Projektanforderungen vorhanden."
+    formatted_rag_context = rag_context.strip() if isinstance(rag_context, str) else ""
+    system_prompt = (
+        "Du bist ein Requirements-Engineering-Assistent. Beantworte Fragen ausschließlich "
+        "auf Basis des folgenden Projektkontexts. Wenn die Antwort daraus nicht ableitbar "
+        "ist, sage ehrlich, dass keine ausreichenden Informationen vorliegen. Erfinde nichts. "
+        "Verweise, wenn möglich, auf konkrete Requirements-IDs.\n\n"
+        "PROJEKTANFORDERUNGEN:\n"
+        f"{formatted_requirements}\n\n"
+        "OPTIONALER RAG-KONTEXT:\n"
+        f"{formatted_rag_context or 'Kein zusätzlicher RAG-Kontext vorhanden.'}"
+    )
+
+    try:
+        client, model, model_config, _ = _create_llm_client(model_key)
+        request_kwargs = {
+            'model': model,
+            'messages': [
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': user_question.strip()},
+            ],
+            'max_tokens': min(1200, model_config['max_output_tokens']),
+        }
+        if model_config.get('supports_temperature'):
+            request_kwargs['temperature'] = 0.2
+
+        response = client.chat.completions.create(**request_kwargs)
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        raise RuntimeError(f"Fehler bei der Beantwortung der Requirement-Frage: {exc}") from exc
+
+
 def generate_requirements(user_description: str | None, inputs: dict, columns: list = None, ai_model: str = None, num_requirements: int = None, num_requirements_mode: str | None = None, num_requirements_value: int | None = None, product_system: str = None, has_excel_context: bool = False, has_pdf_context: bool = False, improve_only: bool = False, extend_existing: bool = False, output_language: str | None = None) -> list[dict]:
     """
     Calls OpenAI API to generate requirements based on user description and inputs.
