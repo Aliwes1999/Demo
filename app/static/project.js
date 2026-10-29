@@ -1100,6 +1100,104 @@ function openRevisionModal(reqId, versionId, revisionOverride = null) {
   openEditModal(reqId, versionId, "revision", revisionOverride);
 }
 
+function initRequirementChat() {
+  const widget = document.getElementById("chatbot-widget");
+  if (!widget || widget.dataset.initialized === "true") return;
+
+  const toggle = document.getElementById("chatbot-toggle");
+  const close = document.getElementById("chatbot-close");
+  const chatWindow = document.getElementById("chatbot-window");
+  const form = document.getElementById("chatbot-form");
+  const input = document.getElementById("chatbot-input");
+  const messages = document.getElementById("chatbot-messages");
+  const projectId = widget.dataset.projectId;
+  if (
+    !toggle ||
+    !close ||
+    !chatWindow ||
+    !form ||
+    !input ||
+    !messages ||
+    !projectId
+  )
+    return;
+
+  const appendMessage = (text, className) => {
+    const message = document.createElement("div");
+    message.className = className;
+    message.textContent = text;
+    messages.appendChild(message);
+    messages.scrollTop = messages.scrollHeight;
+    return message;
+  };
+
+  toggle.addEventListener("click", () => {
+    chatWindow.classList.toggle("d-none");
+    if (!chatWindow.classList.contains("d-none")) input.focus();
+  });
+  close.addEventListener("click", () => chatWindow.classList.add("d-none"));
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const question = input.value.trim();
+    if (!question) {
+      input.focus();
+      return;
+    }
+
+    appendMessage(
+      question,
+      "align-self-end bg-primary text-white rounded p-2 small",
+    );
+    input.value = "";
+    input.disabled = true;
+    const submit = document.getElementById("chatbot-submit");
+    if (submit) submit.disabled = true;
+    const thinking = appendMessage(
+      "Denkt nach...",
+      "align-self-start bg-light text-muted rounded p-2 small",
+    );
+
+    try {
+      const body = { question };
+      const modelKey = widget.dataset.modelKey;
+      if (modelKey) body.model_key = modelKey;
+      const response = await fetch(`/project/${projectId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => ({}));
+      thinking.remove();
+      if (!response.ok) {
+        throw new Error(data.error || "Die Chat-Anfrage ist fehlgeschlagen.");
+      }
+      appendMessage(
+        data.response || "Es liegt keine Antwort vor.",
+        "align-self-start bg-light rounded p-2 small",
+      );
+    } catch (error) {
+      thinking.remove();
+      appendMessage(
+        error.message || "Netzwerkfehler beim Chat.",
+        "align-self-start bg-danger-subtle text-danger rounded p-2 small",
+      );
+    } finally {
+      input.disabled = false;
+      if (submit) submit.disabled = false;
+      input.focus();
+    }
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  widget.dataset.initialized = "true";
+}
+
 // Initialize on DOMContentLoaded
 document.addEventListener("DOMContentLoaded", function () {
   console.log("Project.js loaded");
@@ -1113,6 +1211,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Attach event listeners
   attachEventListeners();
+  initRequirementChat();
 
   // Force-select the preferred version (server-provided) to avoid falling back to latest
   const preferredVersionId = window.SELECTED_VERSION_ID || null;
