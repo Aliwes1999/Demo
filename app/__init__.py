@@ -67,8 +67,8 @@ def create_app():
         language_options = [
             {"code": "de", "label": "Deutsch", "flag": "de"},
             {"code": "en", "label": "English", "flag": "gb"},
-            {"code": "fr", "label": "Français", "flag": "fr"},
-            {"code": "es", "label": "Español", "flag": "es"},
+          #  {"code": "fr", "label": "Français", "flag": "fr"},
+           # {"code": "es", "label": "Español", "flag": "es"},
         ]
         return {
             "current_locale": str(get_locale() or "de"),
