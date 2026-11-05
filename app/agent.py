@@ -426,6 +426,10 @@ def generate(project_id):
             req_context += "--- ENDE BESTEHENDE ANFORDERUNGEN ---\n"
             full_description += req_context
 
+    # Do not keep a SQLite read transaction open while waiting for the
+    # external AI service. A new session is created automatically below.
+    db.session.remove()
+
     try:
         requirements_data = generate_requirements(
             full_description,

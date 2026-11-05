@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_babel import Babel, get_locale
+from sqlalchemy import event
 
 bp = Blueprint("main", __name__)
 db = SQLAlchemy()
@@ -18,10 +19,21 @@ def create_app():
     app.config['SECRET_KEY'] = 'your-secret-key-here'  # Add secret key for sessions
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(app.instance_path, "db.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'connect_args': {'timeout': 30}
+    }
     app.config['BABEL_DEFAULT_LOCALE'] = 'de'
     app.config['BABEL_SUPPORTED_LOCALES'] = ['de', 'en', 'fr', 'es']
     db.init_app(app)
     migrate.init_app(app, db)
+
+    with app.app_context():
+        @event.listens_for(db.engine, 'connect')
+        def configure_sqlite_connection(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute('PRAGMA journal_mode=WAL')
+            cursor.execute('PRAGMA busy_timeout=30000')
+            cursor.close()
 
     def select_locale():
         lang = session.get('lang')
