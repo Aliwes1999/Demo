@@ -297,10 +297,10 @@ current_lang_code) | list | first) %}
                     </div>
                     <div class="flex-grow-1">
                       <div class="fw-medium text-dark">
-                        {{ current_user.email.split('@')[0] }}
+                        {{ current_user.participant_id }}
                       </div>
                       <div class="small text-muted">
-                        {{ current_user.email }}
+                        {{ current_user.participant_id }}
                       </div>
                     </div>
                   </div>
@@ -353,22 +353,13 @@ current_lang_code) | list | first) %}
             </ul>
           </div>
           {% else %}
-          <!-- Not Authenticated: Login/Register Links -->
+          <!-- Not Authenticated: Anonymous participant start -->
           <div class="d-flex align-items-center gap-2">
-            <a
-              class="btn btn-link text-decoration-none text-dark"
-              href="{{ url_for('auth.login') }}"
-              style="padding: 0.375rem 0.75rem"
-            >
-              {{ _('Anmelden') }}
-            </a>
-            <a
-              class="btn btn-primary"
-              href="{{ url_for('auth.register') }}"
-              style="padding: 0.375rem 0.75rem"
-            >
-              {{ _('Registrieren') }}
-            </a>
+            <form method="POST" action="{{ url_for('auth.login') }}">
+              <button type="submit" class="btn btn-primary" style="padding: 0.375rem 0.75rem">
+                {{ _('Starten') }}
+              </button>
+            </form>
           </div>
           {% endif %}
         </div>

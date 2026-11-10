@@ -37,6 +37,14 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.email}>'
 
+    @property
+    def participant_id(self):
+        """Return the anonymous ID without the internal demo prefix."""
+        local_part = self.email.split('@', 1)[0]
+        if self.email.endswith('@demo.invalid') and local_part.startswith('demo-'):
+            return local_part[5:]
+        return local_part
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

@@ -625,10 +625,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <br>
                 <small class="text-muted user-cell">
                      {% if selected_version.created_by %}
-                     <i class="bi bi-person-plus-fill text-success"></i> {{ _('Erstellt:') }} {{ selected_version.created_by.email.split('@')[0] }}
+                     <i class="bi bi-person-plus-fill text-success"></i> {{ _('Erstellt:') }} {{ selected_version.created_by.participant_id }}
                      {% endif %}
                      {% if selected_version.last_modified_by and selected_version.last_modified_by.id != selected_version.created_by.id %}
-                     <br><i class="bi bi-pencil-fill text-primary"></i> {{ _('Bearbeitet:') }} {{ selected_version.last_modified_by.email.split('@')[0] }}
+                     <br><i class="bi bi-pencil-fill text-primary"></i> {{ _('Bearbeitet:') }} {{ selected_version.last_modified_by.participant_id }}
                      {% endif %}
                 </small>
             </td>
