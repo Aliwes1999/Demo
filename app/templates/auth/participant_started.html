@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Teilnahme gestartet') }}{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+      <h2 class="mb-3">{{ _('Teilnahme gestartet') }}</h2>
+      <p class="text-muted">
+        {{ _('Deine Teilnahme-ID wird gerade als TXT-Datei heruntergeladen.') }}
+      </p>
+      <a
+        id="download-participant-id"
+        class="btn btn-outline-primary"
+        href="{{ download_url }}"
+      >
+        {{ _('Teilnahme-ID herunterladen') }}
+      </a>
+    </div>
+  </div>
+</div>
+<script>
+  (() => {
+    const downloadLink = document.getElementById("download-participant-id");
+    const nextUrl = {{ next_url|tojson }};
+
+    fetch(downloadLink.href, { credentials: "same-origin" })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Download fehlgeschlagen");
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const temporaryLink = document.createElement("a");
+        temporaryLink.href = objectUrl;
+        temporaryLink.download = "teilnahme-id.txt";
+        document.body.appendChild(temporaryLink);
+        temporaryLink.click();
+        temporaryLink.remove();
+        URL.revokeObjectURL(objectUrl);
+        window.location.replace(nextUrl);
+      })
+      .catch(() => {
+        downloadLink.classList.add("btn-primary");
+        downloadLink.classList.remove("btn-outline-primary");
+        downloadLink.focus();
+      });
+  })();
+</script>
+{% endblock %}

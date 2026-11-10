@@ -512,6 +512,7 @@ endblock %} {% block content %}
                       name="generation_mode"
                       id="mode_standard"
                       value="standard"
+                      checked
                     />
                     <label class="form-check-label" for="mode_standard">
                       <strong>{{ _('Neugenerierung:') }}</strong> {{ _('innovativ & kreativ') }}
@@ -525,6 +526,7 @@ endblock %} {% block content %}
                       name="generation_mode"
                       id="mode_extend"
                       value="extend"
+                      disabled
                     />
                     <label class="form-check-label" for="mode_extend">
                       <strong>{{ _('Erweiterung:') }}</strong> {{ _('geänderte oder neue, ergänzende Anforderungen') }}
@@ -538,6 +540,7 @@ endblock %} {% block content %}
                       name="generation_mode"
                       id="mode_improve"
                       value="improve"
+                      disabled
                     />
                     <label class="form-check-label" for="mode_improve">
                       <strong>{{ _('Überprüfung/Verbesserung der Anforderungsqualität:') }}</strong> {{ _('z.B. widerspruchsfrei, qualitativ hochwertige Formulierungen, quantifizierbare/messbare Anforderungen') }}
@@ -608,8 +611,8 @@ endblock %} {% block content %}
                     style="max-width: 200px"
                   >
              
-                    <option value="min">{{ _('Mindestens') }}</option>
-                    <option value="max">{{ _('Höchstens') }}</option>
+                    <option value="min" disabled>{{ _('Mindestens') }}</option>
+                    <option value="max" disabled>{{ _('Höchstens') }}</option>
                     <option value="auto" selected>{{ _('Automatisch') }}</option>
                   </select>
                   <input
@@ -706,6 +709,7 @@ endblock %} {% block content %}
         type="button"
         class="btn btn-outline-primary"
         id="add-column-btn"
+        disabled
       >
         <i class="bi bi-plus-circle me-1"></i>{{ _('Spalte hinzufügen') }}
       </button>
@@ -735,7 +739,16 @@ endblock %} {% block content %}
                 <select class="form-select" id="ai_model" name="ai_model">
                   <option value="" selected>{{ _('Bitte auswählen') }}</option>
                   {% for model in llm_models %}
-                  <option value="{{ model.key }}">{{ model.label }}</option>
+                  <option
+                    value="{{ model.key }}"
+                    {% if model.key in [
+                      'openai:gpt-4o-mini',
+                      'kiconnect:mistralai-mistral-small-4-119b-2603',
+                      'kiconnect:qwen-qwen3-8-27b'
+                    ] %}disabled{% endif %}
+                  >
+                    {{ model.label }}
+                  </option>
                   {% endfor %}
                 </select>
               </div>

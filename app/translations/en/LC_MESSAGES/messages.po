@@ -332,8 +332,8 @@ msgstr "Regenerate (AI)"
 msgid "Noch keine Anforderungen vorhanden."
 msgstr "No requirements yet."
 
-msgid "Erste Anforderung generieren"
-msgstr "Generate first requirement"
+msgid "Erste Anforderungen generieren"
+msgstr "Generate first requirements"
 
 msgid "Erstellt automatisch den SysML v2 Code aus den aktüllen Anforderungen."
 msgstr "Automatically generates SysML v2 code from current requirements."
@@ -619,3 +619,15 @@ msgstr "Created:"
 
 msgid "Bearbeitet:"
 msgstr "Edited:"
+
+msgid "Keine Projekte gefunden"
+msgstr "No Projects found"
+
+msgid "Projekt erstellen"
+msgstr "Create Projects"
+
+msgid "Gelöschte Anforderungen"
+msgstr "deleted requirements"
+
+msgid "Anforderungen bewerten"
+msgstr "Evaluate requirements"

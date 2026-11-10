@@ -47,7 +47,7 @@
           <h1 class="display-6 fw-bold text-dark mt-1 mb-0">
             {{ _('Willkommen zurück,') }} <br />
             <span class="text-primary"
-              >{{ current_user.email.split('@')[0] }}</span
+              >{{ current_user.participant_id }}</span
             >
           </h1>
         </div>
@@ -182,7 +182,7 @@
       >
         <i class="bi bi-folder-plus display-4"></i>
       </div>
-      <h3>Keine Projekte gefunden</h3>
+      <h3>{{ _('Keine Projekte gefunden') }}</h3>
       <p class="text-muted mb-4">
         {{ _('Starten Sie jetzt mit Ihrem ersten Projekt durch.') }}
       </p>

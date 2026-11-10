@@ -7,28 +7,30 @@ KICONNECT_API_KEY = os.getenv('KICONNECT_API_KEY')
 KICONNECT_BASE_URL = os.getenv('KICONNECT_BASE_URL', 'https://chat.kiconnect.nrw/api/v1')
 
 LLM_MODELS = {
-    'openai:gpt-4o-mini': {
+       'openai:gpt-4o-mini': {
         'provider': 'openai',
-        'model': 'gpt-4o-mini',
-        'label': 'GPT-4o Mini (OpenAI)',
-        'max_output_tokens': 8000,
-        'supports_temperature': True,
-    },
-    'kiconnect:mistralai-mistral-small-4-119b-2603': {
-        'provider': 'kiconnect',
-        'model': 'mistralai-mistral-small-4-119b-2603',
-        'label': 'Mistral Small 4 119B',
-        'max_output_tokens': 64000,
-        'supports_temperature': True,
-        'prompt_style': 'strict_title_json',
-    },
-    'kiconnect:qwen-qwen3-8-27b': {
-        'provider': 'kiconnect',
-        'model': 'qwen-qwen3-8-27b',
-        'label': 'Qwen3.8 27B',
-        'max_output_tokens': 131100,
-        'supports_temperature': True,
-    },
+         'model': 'gpt-4o-mini',
+         'label': 'GPT-4o Mini (OpenAI)',
+         'max_output_tokens': 8000,
+         'supports_temperature': True,
+     },
+
+     'kiconnect:mistralai-mistral-small-4-119b-2603': {
+         'provider': 'kiconnect',
+         'model': 'mistralai-mistral-small-4-119b-2603',
+         'label': 'Mistral Small 4 119B',
+         'max_output_tokens': 64000,
+         'supports_temperature': True,
+         'prompt_style': 'strict_title_json',
+     },
+
+     'kiconnect:qwen-qwen3-8-27b': {
+         'provider': 'kiconnect',
+         'model': 'qwen-qwen3-8-27b',
+         'label': 'Qwen3.8 27B',
+         'max_output_tokens': 131100,
+         'supports_temperature': True,
+     },
     'kiconnect:openai-gpt-oss-120b': {
         'provider': 'kiconnect',
         'model': 'openai-gpt-oss-120b',
