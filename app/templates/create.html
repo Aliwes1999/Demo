@@ -101,13 +101,13 @@ content %}
   </button>
   <section id="chatbot-window" class="card shadow-lg d-none" aria-label="Anforderungs-Chat" style="width: 380px; height: 500px; max-width: calc(100vw - 2rem); max-height: calc(100vh - 5rem);">
     <header class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
-      <strong>chatbot: Anforderungsanalyse-Synthese</strong>
+      <strong>ChatBot: Anorderungsanalyse & -Synthese</strong>
       <button id="chatbot-close" type="button" class="btn btn-sm btn-link text-white p-0" aria-label="Chat schließen" title="Chat schließen">
         <i class="bi bi-x-lg"></i>
       </button>
     </header>
     <div id="chatbot-messages" class="card-body overflow-auto d-flex flex-column gap-2" aria-live="polite">
-      <div class="align-self-start bg-light rounded p-2 small">Stelle eine Frage zu den Projektanforderungen.</div>
+      <div class="align-self-start bg-light rounded p-2 small">Stelle Fragen zu den vorhandenen Anforderungen</div>
     </div>
     <form id="chatbot-form" class="card-footer">
       <div class="input-group">
@@ -139,7 +139,13 @@ content %}
         <div id="conflict-results"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Schliessen') }}</button>
+        <button type="button" class="btn btn-primary" id="copy-conflicts-btn" disabled>
+          <i class="bi bi-clipboard"></i> {{ _('Kopieren') }}
+        </button>
+        <span id="copy-conflicts-status" class="text-success d-none" role="status" aria-live="polite">
+          <i class="bi bi-check-circle"></i> {{ _('Kopiert') }}
+        </span>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Schließen') }}</button>
       </div>
     </div>
   </div>
@@ -155,19 +161,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = new bootstrap.Modal(modalEl);
     const resultsDiv = document.getElementById('conflict-results');
     const loader = document.getElementById('conflict-loader');
+    const copyBtn = document.getElementById('copy-conflicts-btn');
+    const copyStatus = document.getElementById('copy-conflicts-status');
     
     const i18n = {
       conflictsFound: {{ _('Folgende potenzielle Konflikte wurden gefunden:') | tojson }},
       severityHigh: {{ _('Hoch') | tojson }},
       noConflicts: {{ _('Keine logischen Widersprüche gefunden.') | tojson }},
       analysisError: {{ _('Fehler bei der Analyse:') | tojson }},
-      conflictBetween: {{ _('Konflikt zwischen Req') | tojson }}
+      conflictBetween: {{ _('Konflikt zwischen Req') | tojson }},
+      copied: {{ _('Kopiert') | tojson }},
+      copyFailed: {{ _('Kopieren fehlgeschlagen') | tojson }}
     };
 
     btn.addEventListener('click', function() {
         modal.show();
         resultsDiv.innerHTML = '';
         loader.classList.remove('d-none');
+        copyBtn.disabled = true;
+        copyStatus.classList.add('d-none');
+        copyStatus.classList.remove('text-danger');
+        copyStatus.classList.add('text-success');
+        copyStatus.textContent = i18n.copied;
         
         fetch("{{ url_for('main.detect_conflicts_route', project_id=project.id) }}")
           .then(response => response.json())
@@ -188,14 +203,53 @@ document.addEventListener('DOMContentLoaded', function() {
                   });
                   html += '</div>';
                   resultsDiv.innerHTML = html;
+                  copyBtn.disabled = false;
               } else {
                   resultsDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle"></i> ${i18n.noConflicts}</div>`;
+                  copyBtn.disabled = false;
               }
           })
           .catch(err => {
               loader.classList.add('d-none');
                 resultsDiv.innerHTML = `<div class="alert alert-danger">${i18n.analysisError} ${err}</div>`;
           });
+    });
+
+    copyBtn.addEventListener('click', function() {
+        const resultText = resultsDiv.innerText.trim();
+        if (!resultText) return;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(resultText)
+                .then(function() {
+                    copyStatus.classList.remove('d-none');
+                })
+                .catch(function() {
+                    copyStatus.textContent = i18n.copyFailed;
+                    copyStatus.classList.remove('text-success');
+                    copyStatus.classList.add('text-danger');
+                    copyStatus.classList.remove('d-none');
+                });
+            return;
+        }
+
+        const copyTextarea = document.createElement('textarea');
+        copyTextarea.value = resultText;
+        copyTextarea.setAttribute('readonly', '');
+        copyTextarea.style.position = 'fixed';
+        copyTextarea.style.opacity = '0';
+        document.body.appendChild(copyTextarea);
+        copyTextarea.select();
+        const copied = document.execCommand('copy');
+        copyTextarea.remove();
+        if (copied) {
+            copyStatus.classList.remove('d-none');
+        } else {
+            copyStatus.textContent = i18n.copyFailed;
+            copyStatus.classList.remove('text-success');
+            copyStatus.classList.add('text-danger');
+            copyStatus.classList.remove('d-none');
+        }
     });
 });
 </script>
@@ -730,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                     <p>{{ _('Noch keine Anforderungen vorhanden.') }}</p>
                   <a href="{{ url_for('agent.agent_page', project_id=project.id) }}" class="btn btn-primary mt-2">
-                      {{ _('Erste Anforderung generieren') }}
+                      {{ _('Erste Anforderungen generieren') }}
                   </a>
               </div>
             </td>

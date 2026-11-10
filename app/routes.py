@@ -2351,12 +2351,6 @@ def detect_conflicts_route(project_id):
         batch = req_list[i:i + batch_size]
         if len(batch) >= 2:
             batch_conflicts = detect_conflicts(batch)
-            # Adjust IDs to global display_ids
-            for c in batch_conflicts:
-                if 'req_id_1' in c and isinstance(c['req_id_1'], int):
-                    c['req_id_1'] += i
-                if 'req_id_2' in c and isinstance(c['req_id_2'], int):
-                    c['req_id_2'] += i
             all_conflicts.extend(batch_conflicts)
     
     # Remove duplicates if any

@@ -2,12 +2,22 @@ import os
 import json
 import re
 import sys
+import time
 from pathlib import Path
-from openai import OpenAI
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError,
+    OpenAI,
+    RateLimitError,
+)
 
 # Add parent directory to path to import config
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import config
+
+MAX_REQUIREMENT_GENERATION_ATTEMPTS = 2
+REQUIREMENT_GENERATION_RETRY_DELAY_SECONDS = 1
 
 
 def _create_llm_client(model_key: str | None = None):
@@ -156,45 +166,53 @@ MISTRAL-AUSGABEVERTRAG:
     else:
         user_message = "\n".join(user_message_parts)
 
-    try:
-        # Call OpenAI Chat Completions API
-        max_output_tokens = 8000
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
-        token_limit = min(max_output_tokens, model_config['max_output_tokens'])
-        request_kwargs = {
-            'model': model,
-            'messages': messages,
-        }
-        if model.startswith('gpt-5'):
-            request_kwargs['max_completion_tokens'] = token_limit
-        else:
-            request_kwargs['max_tokens'] = token_limit
-        if model_config['supports_temperature']:
-            request_kwargs['temperature'] = 0.2
+    # Call OpenAI Chat Completions API, retrying once for transient service
+    # or response-format failures that can occur with hosted models such as GPT-OSS.
+    max_output_tokens = 8000
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+    token_limit = min(max_output_tokens, model_config['max_output_tokens'])
+    request_kwargs = {
+        'model': model,
+        'messages': messages,
+    }
+    if model.startswith('gpt-5'):
+        request_kwargs['max_completion_tokens'] = token_limit
+    else:
+        request_kwargs['max_tokens'] = token_limit
+    if model_config['supports_temperature']:
+        request_kwargs['temperature'] = 0.2
 
-        response = client.chat.completions.create(
-            **request_kwargs
-        )
+    last_error = None
+    for attempt in range(MAX_REQUIREMENT_GENERATION_ATTEMPTS):
+        try:
+            response = client.chat.completions.create(**request_kwargs)
 
-        # Extract response content
-        response_text = response.choices[0].message.content.strip()
+            # Extract response content
+            response_text = (response.choices[0].message.content or '').strip()
 
-        # Parse JSON response
-        requirements = _parse_json_response(
-            response_text,
-            columns,
-            num_requirements,
-            num_requirements_mode,
-            num_requirements_value
-        )
-        
-        return requirements
+            # Parse JSON response
+            return _parse_json_response(
+                response_text,
+                columns,
+                num_requirements,
+                num_requirements_mode,
+                num_requirements_value
+            )
+        except (
+            APIConnectionError,
+            APITimeoutError,
+            InternalServerError,
+            RateLimitError,
+            RuntimeError,
+        ) as exc:
+            last_error = exc
+            if attempt + 1 < MAX_REQUIREMENT_GENERATION_ATTEMPTS:
+                time.sleep(REQUIREMENT_GENERATION_RETRY_DELAY_SECONDS)
 
-    except Exception as e:
-        raise RuntimeError(f"OpenAI request failed: {str(e)}")
+    raise RuntimeError(f"OpenAI request failed: {last_error}")
 
 
 def _parse_json_response(response_text: str, columns: list = None, num_requirements: int = None, num_requirements_mode: str | None = None, num_requirements_value: int | None = None) -> list[dict]:
