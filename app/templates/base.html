@@ -54,9 +54,10 @@ current_lang_code) | list | first) %}
             class="btn btn-link text-decoration-none d-flex align-items-center me-4 p-0 border-0"
             type="button"
             id="appSwitcherDropdown"
-            data-bs-toggle="dropdown"
+            disabled
+            aria-disabled="true"
             aria-expanded="false"
-            style="background: none; color: inherit"
+            style="background: none; color: inherit; pointer-events: none"
           >
             <div
               class="d-flex align-items-center justify-content-center rounded bg-primary text-white me-2"
@@ -334,8 +335,7 @@ current_lang_code) | list | first) %}
                   class="dropdown-item d-flex align-items-center"
                   href="{{ url_for('main.deleted_requirements_overview') }}"
                 >
-                  <i class="bi bi-trash me-2 text-muted"></i>{{ _('Gelöschte
-                  Anforderungen') }}
+                  <i class="bi bi-trash me-2 text-muted"></i>{{ _('Gelöschte Anforderungen') }}
                 </a>
               </li>
 

@@ -439,9 +439,9 @@ endblock %} {% block content %}
                   <label for="context_file_type" class="form-label">{{ _('Dateien auswählen') }}</label>
                   <select id="context_file_type" name="context_file_type" class="form-select">
                     <option value="none" selected>{{ _('Keine gewählte Dateien') }}</option>
-                    <option value="pdf">{{ _('PDF (.pdf)') }}</option>
-                    <option value="excel">{{ _('Excel/CSV (.xlsx, .xls, .csv)') }}</option>
-                    <option value="both">{{ _('Excel/CSV (.xlsx, .xls, .csv) & PDF (.pdf)') }}</option>
+                    <option value="pdf" disabled>{{ _('PDF (.pdf)') }}</option>
+                    <option value="excel" disabled>{{ _('Excel/CSV (.xlsx, .xls, .csv)') }}</option>
+                    <option value="both" disabled>{{ _('Excel/CSV (.xlsx, .xls, .csv) & PDF (.pdf)') }}</option>
                   </select>
                 </div>
                 <div class="drop-zone-wrapper d-none" id="pdf-drop-wrapper">
@@ -755,7 +755,7 @@ endblock %} {% block content %}
             </div>
 
             <!-- Expert Settings -->
-            <div class="config-card">
+            <div class="config-card d-none">
               <div
                 class="expert-settings-toggle"
                 data-bs-toggle="collapse"
@@ -809,7 +809,6 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-
             <hr class="my-4" />
 
             <div class="d-grid">

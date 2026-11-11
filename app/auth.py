@@ -66,7 +66,9 @@ def download_participant_id():
     if not re.fullmatch(r'\d{9}', participant_id):
         return Response('Teilnehmer-ID nicht verfügbar.', status=404)
     response = Response(
-        f'Teilnahme-ID: {participant_id}\n',
+        'Link zu der Webseite:\n'
+        'https://requirementsengineering.pythonanywhere.com\n\n'
+        f'User-ID: {participant_id}\n',
         mimetype='text/plain',
     )
     response.headers['Content-Disposition'] = (
