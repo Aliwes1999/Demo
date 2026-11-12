@@ -963,7 +963,13 @@ def analyze_requirement(title: str, description: str, status: str) -> dict:
         return {"error": f"Fehler bei der Analyse: {str(e)}"}
 
 
-def improve_requirement_from_analysis(analysis: dict, title: str, description: str, status: str) -> dict:
+def improve_requirement_from_analysis(
+    analysis: dict,
+    title: str,
+    description: str,
+    status: str,
+    project_requirements: list[dict] | None = None,
+) -> dict:
     """
     Generate improvement suggestion based on analysis results.
 
@@ -972,6 +978,8 @@ def improve_requirement_from_analysis(analysis: dict, title: str, description: s
         title (str): Current requirement title.
         description (str): Current requirement description.
         status (str): Current requirement status.
+        project_requirements (list[dict] | None): Other project requirements
+            used to avoid overlaps and ambiguity.
 
     Returns:
         dict: Improvement suggestion with improved_title, improved_description, and rationale.
@@ -1005,30 +1013,88 @@ def improve_requirement_from_analysis(analysis: dict, title: str, description: s
                 weakness_points.append(f"Vollständigkeit: {functional_assessment['completeness']}")
 
     system_prompt = """
-    Du bist ein erfahrener Requirements Engineer mit Kenntnissen in Best Practices des Model-Based Systems Engineering.
-    Deine Aufgabe ist es, basierend auf vorliegenden Schwachstellen einer Anforderung, konkrete Verbesserungsvorschläge zu machen.
+Du bist ein erfahrener Requirements Engineer mit Expertise im
+Systems Engineering und Model-Based Systems Engineering (MBSE).
 
-    Regeln:
-    - Verbessere nur die identifizierten Schwachstellen, keine unnötigen Änderungen.
-    - Behalte den Sinn und die Absicht der ursprünglichen Anforderung bei.
-    - Mache den Text klarer, messbarer und eindeutiger.
-    - Orientiere dich methodisch an SysML v2 Best Practices.
-    - Nutze konkrete, messbare Kriterien where applicable.
+Deine Aufgabe ist es, die Formulierung einer einzelnen bestehenden
+Anforderung anhand identifizierter Qualitätsmängel gezielt zu verbessern.
 
-    Antworte ausschließlich mit gültigem JSON in der folgenden Struktur:
-    {
-      "improved_title": "Verbesserte Titelformulierung",
-      "improved_description": "Verbesserte Beschreibung mit klaren Anforderungen und Messbarkeit where applicable",
-      "improvement_rationale": "Kurze Erklärung, welche Schwachstellen behoben wurden",
-      "improvements": ["Punkt 1", "Punkt 2", ...]
-    }
-    """
+Orientiere dich an ISO/IEC/IEEE 29148 und den INCOSE Guidelines
+zur Formulierung qualitativ hochwertiger Anforderungen.
+
+REGELN:
+
+1. Inhalt und Bedeutung erhalten:
+- Bewahre die ursprüngliche fachliche Aussage und Intention.
+- Verändere keine technischen Eigenschaften, Funktionen, Grenzwerte,
+  Einheiten, Randbedingungen oder Verbindlichkeiten.
+- Ergänze keine unbegründeten Annahmen oder neuen Anforderungen.
+- Nutze die übrigen Projektanforderungen als Kontext, um
+  Überschneidungen, Mehrdeutigkeiten und neue Konflikte zu vermeiden.
+
+2. Formulierungsqualität verbessern:
+- Verbessere gezielt die identifizierten Schwachstellen.
+- Achte auf Eindeutigkeit, Verständlichkeit, Konsistenz,
+  Vollständigkeit, Korrektheit und Verifizierbarkeit.
+- Verwende präzise Fachbegriffe und eine einheitliche Terminologie.
+- Formuliere möglichst messbar und objektiv prüfbar,
+  ohne fehlende Grenzwerte eigenständig festzulegen.
+- Formuliere lösungsneutral, sofern keine technische Lösung
+  ausdrücklich vorgegeben ist.
+
+3. Aufbau der Anforderung:
+- Verwende einen kurzen, prägnanten und eindeutigen Namen.
+- Formuliere genau eine atomare Anforderung.
+- Verwende maximal einen Satz, gegebenenfalls mit einem Nebensatz.
+- Vermeide Aufzählungen, Verschachtelungen und mehrere
+  unabhängige Forderungen innerhalb einer Anforderung.
+- Verwende eine eindeutige Verbindlichkeit, z. B. "muss".
+- Ändere nur so viel wie nötig, um die Qualität zu verbessern.
+
+4. Grenzen der Reformulierung:
+- Behebe keine fachlichen Widersprüche durch eigenmächtige
+  Änderungen der ursprünglichen Anforderungsinhalte.
+- Wenn eine Schwachstelle nur durch zusätzliche Informationen,
+  fachliche Entscheidungen oder neue Grenzwerte behoben werden
+  kann, weise darauf hin.
+- Wenn mehrere unabhängige Anforderungen enthalten sind,
+  benenne den notwendigen Aufteilungsbedarf, ohne Inhalte
+  eigenmächtig zu streichen.
+- Wenn keine sinnvolle Verbesserung notwendig oder möglich ist,
+  gib dies ausdrücklich an und behalte die ursprüngliche
+  Formulierung bei.
+
+AUSGABEFORMAT:
+
+Name:
+[Verbesserter Anforderungsname]
+
+Beschreibung:
+[Verbesserte Anforderungsformulierung]
+
+Begründung der Verbesserungen:
+- [Kurz und präzise erläutern, welche Schwachstellen behoben wurden]
+- [Weitere relevante Verbesserung, falls vorhanden]
+
+Falls keine Verbesserung notwendig oder ohne zusätzliche
+Informationen möglich ist, begründe dies kurz.
+
+Antworte ausschließlich mit dem Ergebnis, ohne Einleitung
+oder zusätzliche Erläuterungen.
+"""
 
     weakness_text = "\n".join(weakness_points) if weakness_points else "Allgemeine Verbesserung der Anforderungsqualität"
+    project_context = "\n".join(
+        f"- {item.get('title', '')}: {item.get('description', '')}"
+        for item in (project_requirements or [])
+        if isinstance(item, dict)
+    ) or "Kein weiterer Projektkontext vorhanden."
 
     user_message = (
         "Basierend auf der Analyse einer Anforderung wurden folgende Schwachstellen identifiziert:\n\n"
         f"{weakness_text}\n\n"
+        "ÜBRIGE PROJEKTANFORDERUNGEN ALS KONTEXT:\n"
+        f"{project_context}\n\n"
         "ORIGINALE ANFORDERUNG:\n"
         f"Titel: {title}\n"
         f"Beschreibung: {description}\n"
@@ -1044,11 +1110,39 @@ def improve_requirement_from_analysis(analysis: dict, title: str, description: s
                 {"role": "user", "content": user_message}
             ],
             temperature=0.3,
-            max_tokens=800,
-            response_format={"type": "json_object"}
+            max_tokens=800
         )
         response_text = response.choices[0].message.content.strip()
-        return json.loads(response_text)
+        try:
+            result = json.loads(response_text)
+            if isinstance(result, dict):
+                return result
+        except json.JSONDecodeError:
+            pass
+
+        name_match = re.search(
+            r"(?ms)^\s*(?:\*\*)?Name(?:\*\*)?\s*:\s*(.*?)"
+            r"^\s*(?:\*\*)?Beschreibung(?:\*\*)?\s*:\s*(.*?)"
+            r"^\s*(?:\*\*)?Begründung der Verbesserungen(?:\*\*)?\s*:\s*(.*)$",
+            response_text,
+        )
+        if not name_match:
+            raise ValueError("Antwort entspricht nicht dem erwarteten Verbesserungsformat.")
+
+        improved_title = name_match.group(1).strip()
+        improved_description = name_match.group(2).strip()
+        rationale = name_match.group(3).strip()
+        improvements = [
+            re.sub(r"^\s*[-*]\s*", "", line).strip()
+            for line in rationale.splitlines()
+            if line.strip()
+        ]
+        return {
+            "improved_title": improved_title,
+            "improved_description": improved_description,
+            "improvement_rationale": rationale,
+            "improvements": improvements,
+        }
     except Exception as e:
         return {"error": f"Fehler beim Erstellen des Verbesserungsvorschlags: {str(e)}"}
 
