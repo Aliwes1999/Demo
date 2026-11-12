@@ -2806,12 +2806,25 @@ def improve_requirement_route(version_id):
         # If no analysis result provided, generate one first
         analysis_result = analyze_requirement(version.title, version.description, version.status)
 
+    project_requirements = []
+    for requirement in Requirement.query.filter_by(
+        project_id=version.requirement.project_id,
+        is_deleted=False,
+    ).all():
+        latest = requirement.get_latest_version()
+        if latest and requirement.id != version.requirement_id:
+            project_requirements.append({
+                'title': latest.title,
+                'description': latest.description,
+            })
+
     # Generate improvement suggestion based on analysis
     improvement = improve_requirement_from_analysis(
         analysis_result,
         version.title,
         version.description,
-        version.status
+        version.status,
+        project_requirements=project_requirements,
     )
 
     return jsonify({'result': improvement})
