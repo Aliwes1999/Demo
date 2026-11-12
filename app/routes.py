@@ -1796,7 +1796,7 @@ def export_excel(project_id):
     requirements = Requirement.query.filter_by(
         project_id=project_id,
         is_deleted=False
-    ).all()
+    ).order_by(Requirement.id.asc()).all()
     
     # Get custom columns
     custom_columns = project.get_custom_columns()
@@ -2026,7 +2026,7 @@ def export_sysml(project_id):
     requirements = Requirement.query.filter_by(
         project_id=project_id,
         is_deleted=False
-    ).all()
+    ).order_by(Requirement.id.asc()).all()
 
     requirements_data = []
     display_id = 1
@@ -2327,7 +2327,7 @@ def detect_conflicts_route(project_id):
     requirements = Requirement.query.filter_by(
         project_id=project_id,
         is_deleted=False
-    ).all()
+    ).order_by(Requirement.id.asc()).all()
     
     req_list = []
     display_id = 1
@@ -2347,14 +2347,9 @@ def detect_conflicts_route(project_id):
     if len(req_list) < 2:
         return jsonify({'conflicts': []}) # Need at least 2 to have a conflict
         
-    # Batch processing to handle large lists
-    batch_size = 25
-    all_conflicts = []
-    for i in range(0, len(req_list), batch_size):
-        batch = req_list[i:i + batch_size]
-        if len(batch) >= 2:
-            batch_conflicts = detect_conflicts(batch)
-            all_conflicts.extend(batch_conflicts)
+    # Analyze the complete project list in one request so requirements from
+    # different former batches can be compared with each other.
+    all_conflicts = detect_conflicts(req_list)
     
     # Remove duplicates if any
     seen = set()
@@ -2365,22 +2360,21 @@ def detect_conflicts_route(project_id):
             seen.add(key)
             unique_conflicts.append(c)
     
-    # Fix IDs by parsing description, as AI may hallucinate wrong IDs in description
-    import re
-    for c in unique_conflicts:
-        ids = re.findall(r'(?:ID|Anforderung) (\d+)', c.get('description', ''))
-        if len(ids) >= 2:
-            # Adjust to global IDs if needed
-            id1 = int(ids[0])
-            id2 = int(ids[1])
-            # If IDs are within batch range, adjust; else use as is
-            c['req_id_1'] = id1
-            c['req_id_2'] = id2
-        elif not c.get('req_id_1') or not c.get('req_id_2'):
-            # Fallback if no IDs in description
-            pass
+    valid_ids = {item["id"] for item in req_list}
+    validated_conflicts = []
+    for conflict in unique_conflicts:
+        try:
+            req_id_1 = int(conflict.get("req_id_1"))
+            req_id_2 = int(conflict.get("req_id_2"))
+        except (TypeError, ValueError):
+            continue
+        if req_id_1 not in valid_ids or req_id_2 not in valid_ids or req_id_1 == req_id_2:
+            continue
+        conflict["req_id_1"] = req_id_1
+        conflict["req_id_2"] = req_id_2
+        validated_conflicts.append(conflict)
     
-    return jsonify({'conflicts': unique_conflicts})
+    return jsonify({'conflicts': validated_conflicts})
 
 
 @bp.route("/project/<int:project_id>/evaluate_requirements")
