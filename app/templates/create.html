@@ -423,10 +423,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <i class="bi bi-exclamation-triangle" style="color: #ffc107;"></i>
         <span style="color: #ffc107;">{{ _('Widersprüche prüfen') }}</span>
       </button>
-      <a class="btn btn-modern d-inline-flex align-items-center gap-2" href="{{ url_for('main.evaluate_requirements', project_id=project.id) }}" target="_blank" rel="noopener" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
+      <button class="btn btn-modern d-inline-flex align-items-center gap-2" type="button" disabled aria-disabled="true" title="Anforderungen bewerten" style="border: 1.5px solid #b8e0d2; background: #effaf6; color: #198754; transition: background 0.2s, color 0.2s;">
         <i class="bi bi-clipboard2-check" style="color: #198754;"></i>
         <span style="color: #198754;">Anforderungen bewerten</span>
-      </a>
+      </button>
       <button id="scrollToManualBtn" class="btn btn-sm btn-modern d-flex align-items-center shadow-sm fw-bold text-white border-0" type="button" style="background: linear-gradient(90deg, #6c757d 0%, #adb5bd 100%); border-radius: 1.3rem; letter-spacing: 0.3px; font-size: 0.78rem; padding: 0.25rem 0.7rem; transition: transform 0.15s; min-width: 170px; justify-content: center;">
         <span class="me-2 d-flex align-items-center">
           <i class="bi bi-plus-circle-fill" style="font-size: 0.9rem; animation: pulseAdd 1.2s infinite alternate;"></i>
