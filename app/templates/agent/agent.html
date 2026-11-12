@@ -854,6 +854,9 @@ endblock %} {% block content %}
     extendedSaved: {{ _('Neue Anforderungen wurden basierend auf dem Bestand erfolgreich erstellt und hinzugefügt.') | tojson }},
     errorPrefix: {{ _('Fehler:') | tojson }},
     networkError: {{ _('Netzwerkfehler:') | tojson }},
+    generationRetryable: {{ _('Die Generierung konnte momentan nicht abgeschlossen werden. Der KI-Dienst hat keine gültige Antwort geliefert. Die Anwendung funktioniert weiterhin. Bitte versuchen Sie es erneut.') | tojson }},
+    generationUnavailable: {{ _('Die Verbindung zum KI-Dienst konnte momentan nicht hergestellt werden. Die Anwendung funktioniert weiterhin. Bitte versuchen Sie es erneut.') | tojson }},
+    retryGeneration: {{ _('Erneut generieren') | tojson }},
     keyPlaceholder: {{ _('Key') | tojson }},
     valuePlaceholder: {{ _('Value') | tojson }}
   };
@@ -1202,6 +1205,31 @@ endblock %} {% block content %}
       const productSystemInput = document.getElementById("product_system");
       const modelSelect = document.getElementById("ai_model");
       const modeEl = document.querySelector('input[name="generation_mode"]:checked');
+      const escapeHtml = (value) => String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+      const showGenerationError = (message, retryable = false) => {
+        messageDiv.className = "alert alert-danger mt-3 shadow-sm";
+        messageDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>${escapeHtml(i18n.errorPrefix)}</strong> ${escapeHtml(message)}
+          ${retryable ? `
+            <div class="mt-3">
+              <button type="button" class="btn btn-outline-danger btn-sm" id="retry-generation-btn">
+                <i class="bi bi-arrow-clockwise me-1"></i>${i18n.retryGeneration}
+              </button>
+            </div>
+          ` : ""}
+        `;
+        messageDiv.classList.remove("d-none");
+        const retryButton = document.getElementById("retry-generation-btn");
+        if (retryButton) {
+          retryButton.addEventListener("click", () => e.target.requestSubmit());
+        }
+      };
 
       // Ensure UI is in a clean state before validation (prevents stuck disabled state)
       btn.disabled = false;
@@ -1329,25 +1357,24 @@ endblock %} {% block content %}
             }, 2000);
           } else {
             // Error from backend
-            messageDiv.className = "alert alert-danger mt-3 shadow-sm";
-            messageDiv.innerHTML = `<strong>${i18n.errorPrefix}</strong> ${result.error}`;
             btn.disabled = false;
             spinner.classList.add("d-none");
             // Show form again
             loadingState.classList.add("d-none");
             agentForm.classList.remove("d-none");
+            showGenerationError(
+              result.retryable ? i18n.generationRetryable : (result.message || result.error || i18n.generationUnavailable),
+              result.retryable === true,
+            );
           }
         })
         .catch((error) => {
-          // Network or parsing error
-          messageDiv.classList.remove("d-none");
-          messageDiv.className = "alert alert-danger mt-3 shadow-sm";
-          messageDiv.innerHTML = `<strong>${i18n.networkError}</strong> ${error.message}`;
           btn.disabled = false;
           spinner.classList.add("d-none");
           // Show form again
           loadingState.classList.add("d-none");
           agentForm.classList.remove("d-none");
+          showGenerationError(i18n.generationUnavailable, true);
         });
     });
 </script>
