@@ -89,8 +89,7 @@ Halte dich vor allem an folgende allgemeine Regeln:
 - Verwende kurze, prägnante Titel, die eindeutig sind und sich nicht mit anderen Anforderungen überschneidne oder auch widersprechen.
 - 'status' ist immer 'Entwurf'.
 -  Wenn Informationen fehlen, triff sinnvolle, konservative Annahmen. Beispielsweise können quantifizierbare Informationen wie Zahlenwerte bzw.
-Constraints (Beschränkungen) (=,<,>,<=,>=,…<…<…,…<=…<=…) gesondert markiert oder hervorgehoben werden z.B. fett/kursiv gedruckt, farblich markiert.
-Diese representieren in den meisten Fällen nämlich den Kern der Anforderung!.
+
 - Verschachtele bzw. verpacke nicht mehrere Anforderungen in einer einzigen.
 Das heißt auch nicht zu viele Sätze in der description für eine Anforderung erzeugen.
 Im besten Fall sogar nur ein Satz erzeugen.

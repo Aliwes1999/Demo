@@ -356,6 +356,7 @@ def manage_project(project_id):
     requirements = (
         Requirement.query
         .filter_by(project_id=project_id, is_deleted=False)
+        .order_by(Requirement.id.asc())
         .all()
     )
     
@@ -404,13 +405,15 @@ def project_chat(project_id):
         requirements = Requirement.query.filter_by(
             project_id=project_id,
             is_deleted=False,
-        ).all()
+        ).order_by(Requirement.id.asc()).all()
         project_requirements = []
+        display_index = 0
         for requirement in requirements:
             latest = requirement.get_latest_version()
             if latest:
+                display_index += 1
                 project_requirements.append({
-                    'id': requirement.id,
+                    'id': f'REQ{display_index}',
                     'title': latest.title,
                     'category': latest.category,
                     'description': latest.description,

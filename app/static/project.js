@@ -1122,10 +1122,77 @@ function initRequirementChat() {
   )
     return;
 
-  const appendMessage = (text, className) => {
+  const escapeHtml = (text) =>
+    String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const renderChatMarkdown = (text) => {
+    const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+    const output = [];
+    let paragraph = [];
+    let listType = null;
+
+    const renderInline = (value) =>
+      escapeHtml(value).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+    const flushParagraph = () => {
+      if (paragraph.length) {
+        output.push(`<p class="mb-2">${paragraph.map(renderInline).join("<br>")}</p>`);
+        paragraph = [];
+      }
+    };
+
+    const closeList = () => {
+      if (listType) {
+        output.push(`</${listType}>`);
+        listType = null;
+      }
+    };
+
+    lines.forEach((line) => {
+      const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/);
+      const unorderedItem = line.match(/^\s*[-*]\s+(.+)$/);
+      const orderedItem = line.match(/^\s*\d+[.)]\s+(.+)$/);
+
+      if (!line.trim()) {
+        flushParagraph();
+        closeList();
+      } else if (heading) {
+        flushParagraph();
+        closeList();
+        output.push(`<h6 class="mb-2 mt-3">${renderInline(heading[1])}</h6>`);
+      } else if (unorderedItem || orderedItem) {
+        flushParagraph();
+        const nextListType = unorderedItem ? "ul" : "ol";
+        if (listType && listType !== nextListType) closeList();
+        if (!listType) {
+          listType = nextListType;
+          output.push(`<${listType} class="mb-2 ps-3">`);
+        }
+        output.push(`<li>${renderInline((unorderedItem || orderedItem)[1])}</li>`);
+      } else {
+        closeList();
+        paragraph.push(line);
+      }
+    });
+
+    flushParagraph();
+    closeList();
+    return output.join("");
+  };
+
+  const appendMessage = (text, className, isMarkdown = false) => {
     const message = document.createElement("div");
     message.className = className;
-    message.textContent = text;
+    if (isMarkdown) {
+      message.innerHTML = renderChatMarkdown(text);
+    } else {
+      message.textContent = text;
+    }
     messages.appendChild(message);
     messages.scrollTop = messages.scrollHeight;
     return message;
@@ -1175,6 +1242,7 @@ function initRequirementChat() {
       appendMessage(
         data.response || "Es liegt keine Antwort vor.",
         "align-self-start bg-light rounded p-2 small",
+        true,
       );
     } catch (error) {
       thinking.remove();
