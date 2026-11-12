@@ -2,7 +2,7 @@ import csv
 import io
 import re
 from pypdf.errors import PdfReadError
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort, current_app
 from flask_login import login_required, current_user
 from . import db
 from .models import Project, Requirement, RequirementVersion, version_label
@@ -203,7 +203,7 @@ def generate(project_id):
                             excel_context += "2. Zusätzlich neue Anforderungen erstellen, die der User explizit anfordert (siehe Beschreibung oben)\n"
                             excel_context += "3. Weitere passende Anforderungen generieren, die zum Gesamtkontext passen\n"
                             excel_context += "Die bestehenden Anforderungen aus Excel dürfen NICHT ignoriert werden!"
-                    except Exception as e:
+                    except Exception:
                         print(f"Fehler beim Lesen der Excel-Datei: {e}")
                         # We continue without the excel content if it fails
                 elif filename.endswith('.csv'):
@@ -607,7 +607,23 @@ def generate(project_id):
     except ValueError as e:
         return jsonify({'ok': False, 'error': f'Konfigurationsfehler: {str(e)}'}), 500
     except RuntimeError as e:
-        return jsonify({'ok': False, 'error': f'KI-Service-Fehler: {str(e)}'}), 500
+        current_app.logger.warning("KI-Service-Fehler bei der Anforderungsgenerierung: %s", e)
+        return jsonify({
+            'ok': False,
+            'error_code': 'ai_service_error',
+            'retryable': True,
+            'message': (
+                'Die Generierung konnte momentan nicht abgeschlossen werden. '
+                'Der KI-Dienst hat keine gültige Antwort geliefert. '
+                'Die Anwendung funktioniert weiterhin. Bitte versuchen Sie es erneut.'
+            ),
+        }), 502
     except Exception as e:
         db.session.rollback()
-        return jsonify({'ok': False, 'error': f'Ein unerwarteter Fehler ist aufgetreten: {str(e)}'}), 500
+        current_app.logger.exception("Unerwarteter Fehler bei der Anforderungsgenerierung")
+        return jsonify({
+            'ok': False,
+            'error_code': 'generation_error',
+            'retryable': False,
+            'message': 'Die Generierung konnte nicht abgeschlossen werden. Bitte versuchen Sie es später erneut.',
+        }), 500
